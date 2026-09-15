@@ -1,0 +1,31 @@
+name: build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build (Windows, .NET 10)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore .\Source\NETworkManager.sln
+
+      - name: Build (Release)
+        run: dotnet build .\Source\NETworkManager.sln --configuration Release --no-restore --property:Platform=x64
+
+      # Step 1 ships no test projects; the `test` target is introduced in Step 2
+      # and wired into this workflow then. See docs/TECHNICAL-REQUIREMENTS.md §16.
