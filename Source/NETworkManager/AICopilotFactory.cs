@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Linq;
 using NETworkManager.AI.Abstractions;
 using NETworkManager.AI.Conversation;
 using NETworkManager.AI.Diagnostics;
