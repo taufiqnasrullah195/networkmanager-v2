@@ -298,7 +298,7 @@ Status:
 
 ### 9.5 AI Copilot UI (implemented)
 
-STEP 8 binds the conversation layer to a minimal WPF chat surface (see `docs/AI_COPILOT_UI.md`):
+STEP 8 binds the conversation layer to a minimal WPF chat surface (see `docs/AI_COPILOT.md`):
 
 ```
 User
@@ -330,9 +330,11 @@ Response
 
 Status:
 
-- `AICopilotView` / `AICopilotViewModel` / `AICopilotFactory` — **implemented** (chat input, loading, cancellation, tool activity, structured findings).
+- `AICopilotView` / `AICopilotViewModel` / `CopilotController` / `AICopilotFactory` — **implemented** (chat input, loading, cancellation, live tool activity, structured findings + evidence).
 - Registered as a standard application (`ApplicationName.AICopilot`) in the existing navigation; no UI redesign.
-- Default provider is the deterministic `MockAIProvider` until a real provider/Custom Agent endpoint is configured at runtime.
+- Runtime provider integration — **implemented**: `CopilotProviderConfiguration` (JSON, checksummed, no secrets) + `DpapiSecureCredentialStore` (Windows DPAPI) + `ProviderRegistry` selection (Custom Agent when configured, mock otherwise).
+- `ToolActivityNotifier` — **implemented** (Step 5/6 structured logging projected into live `ToolActivity` events for the UI; no signature changes).
+- HTTPS required (HTTP only via explicit development opt-in); TLS validation never disabled.
 
 ---
 

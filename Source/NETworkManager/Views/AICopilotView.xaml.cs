@@ -3,15 +3,19 @@ using NETworkManager.ViewModels;
 namespace NETworkManager.Views;
 
 /// <summary>
-///     Minimal AI copilot chat surface (Step 8). Binds <see cref="AICopilotViewModel"/>; the view contains no
-///     business logic — everything flows through the provider-neutral conversation service.
+///     Minimal AI copilot chat surface. Binds <see cref="AICopilotViewModel"/>; the view contains no business
+///     logic — everything flows through the provider-neutral conversation pipeline.
 /// </summary>
 public partial class AICopilotView
 {
-    private readonly AICopilotViewModel _viewModel = new(AICopilotFactory.Create());
+    private readonly AICopilotViewModel _viewModel;
 
     public AICopilotView()
     {
+        var session = AICopilotFactory.CreateSession();
+        _viewModel = new AICopilotViewModel(session.Controller);
+        _viewModel.SetProviderInfo(session.ProviderInfo);
+
         InitializeComponent();
         DataContext = _viewModel;
     }

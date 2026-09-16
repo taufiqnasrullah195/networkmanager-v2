@@ -29,6 +29,7 @@ public enum ToolOrchestrationEvent
     ToolExecutionCompleted,
     ToolExecutionFailed,
     ToolCallLimitReached,
+    ToolCallCancelled,
 }
 
 /// <summary>

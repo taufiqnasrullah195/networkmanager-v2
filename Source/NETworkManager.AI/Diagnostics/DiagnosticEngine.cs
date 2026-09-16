@@ -55,7 +55,7 @@ public sealed class DiagnosticEngine : IDiagnosticEngine
 
             if (unmet.Count > 0)
             {
-                _logger.Log(DiagnosticLogEvent.DiagnosticStepSkipped, new Dictionary<string, object?> { ["stepId"] = step.Id, ["blockedBy"] = string.Join(",", unmet) });
+                _logger.Log(DiagnosticLogEvent.DiagnosticStepSkipped, new Dictionary<string, object?> { ["stepId"] = step.Id, ["toolName"] = step.ToolName, ["blockedBy"] = string.Join(",", unmet) });
                 results.Add(new DiagnosticStepResult
                 {
                     StepId = step.Id,
@@ -67,7 +67,7 @@ public sealed class DiagnosticEngine : IDiagnosticEngine
                 continue;
             }
 
-            _logger.Log(DiagnosticLogEvent.DiagnosticStepStarted, new Dictionary<string, object?> { ["stepId"] = step.Id });
+            _logger.Log(DiagnosticLogEvent.DiagnosticStepStarted, new Dictionary<string, object?> { ["stepId"] = step.Id, ["toolName"] = step.ToolName });
             results.Add(await ExecuteStepAsync(step, target, results, workflowCts.Token).ConfigureAwait(false));
         }
 
@@ -127,7 +127,7 @@ public sealed class DiagnosticEngine : IDiagnosticEngine
 
         if (!result.Success)
         {
-            _logger.Log(DiagnosticLogEvent.DiagnosticStepFailed, new Dictionary<string, object?> { ["stepId"] = step.Id, ["errorCode"] = result.ErrorCode });
+            _logger.Log(DiagnosticLogEvent.DiagnosticStepFailed, new Dictionary<string, object?> { ["stepId"] = step.Id, ["toolName"] = step.ToolName, ["errorCode"] = result.ErrorCode });
             return Fail(step, result.Data, result.ErrorCode ?? "ExecutionError", result.Error ?? $"Tool '{step.ToolName}' failed.");
         }
 
@@ -148,7 +148,13 @@ public sealed class DiagnosticEngine : IDiagnosticEngine
             status = CheckStatus.Passed;
         }
 
-        _logger.Log(DiagnosticLogEvent.DiagnosticStepCompleted, new Dictionary<string, object?> { ["stepId"] = step.Id, ["status"] = status.ToString() });
+        _logger.Log(DiagnosticLogEvent.DiagnosticStepCompleted, new Dictionary<string, object?>
+        {
+            ["stepId"] = step.Id,
+            ["toolName"] = step.ToolName,
+            ["status"] = status.ToString(),
+            ["durationMs"] = (result.Timestamp != default ? (DateTimeOffset.UtcNow - result.Timestamp).TotalMilliseconds : 0),
+        });
 
         return new DiagnosticStepResult
         {

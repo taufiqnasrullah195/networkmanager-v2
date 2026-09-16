@@ -16,4 +16,9 @@
     <Compile Include="..\GlobalAssemblyInfo.cs" Link="Properties\GlobalAssemblyInfo.cs" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- DPAPI-backed credential store (Windows-only at runtime; compiles everywhere via the netstandard2.0 target). -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.5" />
+  </ItemGroup>
+
 </Project>

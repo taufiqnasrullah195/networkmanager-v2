@@ -41,7 +41,10 @@ public sealed class ToolCallOrchestrator : IToolCallOrchestrator
 
         // 0. Cancellation — never dispatch once the caller has cancelled.
         if (cancellationToken.IsCancellationRequested)
+        {
+            _logger.Log(ToolOrchestrationEvent.ToolCallCancelled, new Dictionary<string, object?> { ["toolName"] = toolCall.ToolName, ["callId"] = toolCall.CallId });
             return Fail(toolCall, timestamp, null, "Cancelled", "Tool call was cancelled before dispatch.");
+        }
 
         _logger.Log(ToolOrchestrationEvent.ToolCallReceived, new Dictionary<string, object?> { ["callId"] = toolCall.CallId, ["toolName"] = toolCall.ToolName });
 
@@ -84,12 +87,23 @@ public sealed class ToolCallOrchestrator : IToolCallOrchestrator
             ? context with { ToolCallId = toolCall.CallId, ApprovalGranted = true }
             : context with { ToolCallId = toolCall.CallId };
 
-        _logger.Log(ToolOrchestrationEvent.ToolExecutionStarted, new Dictionary<string, object?> { ["toolName"] = tool.Name, ["callId"] = toolCall.CallId });
+        _logger.Log(ToolOrchestrationEvent.ToolExecutionStarted, new Dictionary<string, object?>
+        {
+            ["toolName"] = tool.Name,
+            ["category"] = tool.Category.ToString(),
+            ["callId"] = toolCall.CallId,
+        });
 
         var result = await _executionService.ExecuteAsync(toolCall, executionContext, cancellationToken).ConfigureAwait(false);
 
         _logger.Log(result.Success ? ToolOrchestrationEvent.ToolExecutionCompleted : ToolOrchestrationEvent.ToolExecutionFailed,
-            new Dictionary<string, object?> { ["toolName"] = tool.Name, ["errorCode"] = result.ErrorCode });
+            new Dictionary<string, object?>
+            {
+                ["toolName"] = tool.Name,
+                ["category"] = tool.Category.ToString(),
+                ["errorCode"] = result.ErrorCode,
+                ["durationMs"] = (DateTimeOffset.UtcNow - timestamp).TotalMilliseconds,
+            });
 
         return new ToolCallOutcome
         {

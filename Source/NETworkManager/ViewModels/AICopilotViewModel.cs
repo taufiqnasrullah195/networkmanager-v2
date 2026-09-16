@@ -1,19 +1,77 @@
 using log4net;
 using NETworkManager.AI.Abstractions;
 using NETworkManager.AI.Conversation;
+using NETworkManager.AI.Models;
 using NETworkManager.Utilities;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 
 namespace NETworkManager.ViewModels;
 
+/// <summary>One tool-activity line (● running / ✓ completed / ✗ failed / − skipped) with its safe summary.</summary>
+public sealed class ToolActivityDisplayItem
+{
+    public string Glyph { get; init; } = "●";
+
+    public string ToolName { get; init; } = string.Empty;
+
+    public string Detail { get; init; } = string.Empty;
+
+    public static ToolActivityDisplayItem From(ToolActivity activity) => new()
+    {
+        Glyph = activity.Status switch
+        {
+            ToolActivityStatus.Started => "●",
+            ToolActivityStatus.Completed => activity.Summary == "skipped" ? "−" : "✓",
+            ToolActivityStatus.Failed => "✗",
+            ToolActivityStatus.Cancelled => "−",
+            _ => "●",
+        },
+        ToolName = activity.ToolName,
+        Detail = BuildDetail(activity),
+    };
+
+    private static string BuildDetail(ToolActivity activity)
+    {
+        var detail = string.IsNullOrWhiteSpace(activity.StepId) ? string.Empty : $"step: {activity.StepId}";
+
+        if (!string.IsNullOrWhiteSpace(activity.Summary) && activity.Summary != "skipped")
+            detail = string.IsNullOrWhiteSpace(detail) ? activity.Summary : $"{detail} — {activity.Summary}";
+
+        if (activity.Duration is { } duration && activity.Status != ToolActivityStatus.Started)
+            detail = string.IsNullOrWhiteSpace(detail) ? $"{duration.TotalMilliseconds:0} ms" : $"{detail} ({duration.TotalMilliseconds:0} ms)";
+
+        return detail;
+    }
+}
+
+/// <summary>One structured evidence line (✓/✗/⚠ + title + safe detail) projected from real evidence data.</summary>
+public sealed class AIEvidenceDisplayItem
+{
+    public string Glyph { get; init; } = "✓";
+
+    public string Title { get; init; } = string.Empty;
+
+    public string Detail { get; init; } = string.Empty;
+}
+
+/// <summary>Display item for one structured <see cref="AIFinding"/> (observation / inference / recommendation).</summary>
+public sealed class AIFindingDisplayItem
+{
+    public string Type { get; init; } = string.Empty;
+
+    public string Text { get; init; } = string.Empty;
+
+    public string Evidence { get; init; } = string.Empty;
+}
+
 /// <summary>
-///     Chat entry displayed in the AI copilot view: role, text, and (for assistant messages) findings and tool activity.
+///     Chat entry: role, text, tool-activity summary, findings, and structured evidence. Property change is raised
+///     for fields the view updates after the async response arrives.
 /// </summary>
 public sealed class AICopilotChatEntry : INotifyPropertyChanged
 {
@@ -31,22 +89,21 @@ public sealed class AICopilotChatEntry : INotifyPropertyChanged
         }
     }
 
-    /// <summary>Short status shown while tools run (e.g. "AI is checking: DNS resolution").</summary>
+    private string? _toolActivity;
+
     public string? ToolActivity
     {
-        get;
+        get => _toolActivity;
         set
         {
-            if (value == field)
-                return;
-
-            field = value;
+            _toolActivity = value;
             OnPropertyChanged();
         }
     }
 
-    /// <summary>Structured findings rendered below the assistant text (fact/inference/recommendation).</summary>
     public ObservableCollection<AIFindingDisplayItem> Findings { get; } = [];
+
+    public ObservableCollection<AIEvidenceDisplayItem> Evidence { get; } = [];
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -54,25 +111,16 @@ public sealed class AICopilotChatEntry : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
 
-/// <summary>Display item for one structured <see cref="NETworkManager.AI.Conversation.AIFinding"/>.</summary>
-public sealed class AIFindingDisplayItem
-{
-    public string Type { get; init; } = string.Empty;
-    public string Text { get; init; } = string.Empty;
-    public string Evidence { get; init; } = string.Empty;
-}
-
 /// <summary>
-///     View model for the AI copilot view. Binds the provider-neutral <see cref="IAIConversationService"/> (Step 7)
-///     to a minimal chat surface: message input, loading state, cancellation, tool activity, and structured findings.
+///     MVVM view model for the AI copilot. Delegates all work to the UI-agnostic <see cref="CopilotController"/>
+///     (which wraps <see cref="IAIConversationService"/>); this class only projects results into bindable
+///     collections and marshals background events onto the dispatcher. No business logic, no secrets.
 /// </summary>
 public class AICopilotViewModel : ViewModelBase
 {
     private static readonly ILog Log = LogManager.GetLogger(typeof(AICopilotViewModel));
 
-    private readonly IAIConversationService _conversationService;
-    private readonly string _conversationId = Guid.NewGuid().ToString("N");
-    private CancellationTokenSource? _cancellationTokenSource;
+    private readonly CopilotController _controller;
 
     private string _input = string.Empty;
 
@@ -94,7 +142,7 @@ public class AICopilotViewModel : ViewModelBase
     public bool IsBusy
     {
         get => _isBusy;
-        set
+        private set
         {
             if (value == _isBusy)
                 return;
@@ -109,7 +157,7 @@ public class AICopilotViewModel : ViewModelBase
     public string StatusMessage
     {
         get => _statusMessage;
-        set
+        private set
         {
             if (value == _statusMessage)
                 return;
@@ -119,21 +167,56 @@ public class AICopilotViewModel : ViewModelBase
         }
     }
 
+    private string _providerInfo = "Provider: Not configured";
+
+    public string ProviderInfo
+    {
+        get => _providerInfo;
+        private set
+        {
+            if (value == _providerInfo)
+                return;
+
+            _providerInfo = value;
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Conversation entries (user + assistant messages, findings, evidence).</summary>
     public ObservableCollection<AICopilotChatEntry> Entries { get; } = [];
+
+    /// <summary>Live tool activity while a request runs (bound to the activity panel).</summary>
+    public ObservableCollection<ToolActivityDisplayItem> ToolActivity { get; } = [];
 
     public ICommand SendCommand { get; }
 
     public ICommand CancelCommand { get; }
 
-    public AICopilotViewModel(IAIConversationService conversationService)
+    public AICopilotViewModel(CopilotController controller)
     {
-        _conversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
+        _controller = controller ?? throw new ArgumentNullException(nameof(controller));
 
-        SendCommand = new RelayCommand(_ => Send(), _ => !IsBusy && !string.IsNullOrWhiteSpace(Input));
-        CancelCommand = new RelayCommand(_ => Cancel(), _ => IsBusy);
+        SendCommand = new RelayCommand(_ => _ = SendAsync(), _ => !IsBusy && !string.IsNullOrWhiteSpace(Input));
+        CancelCommand = new RelayCommand(_ => _controller.Cancel(), _ => IsBusy);
+
+        // Background-thread events marshalled onto the UI dispatcher.
+        _controller.ToolActivity += (_, activity) => OnUi(() =>
+        {
+            if (activity.Status == ToolActivityStatus.Started)
+                StatusMessage = $"Running {activity.ToolName}...";
+
+            ToolActivity.Add(ToolActivityDisplayItem.From(activity));
+        });
+
+        _controller.StatusMessageChanged += (_, message) => OnUi(() => StatusMessage = message);
     }
 
-    private async void Send()
+    public void SetProviderInfo(string providerInfo)
+    {
+        ProviderInfo = string.IsNullOrWhiteSpace(providerInfo) ? "Provider: Not configured" : providerInfo;
+    }
+
+    private async Task SendAsync()
     {
         if (IsBusy || string.IsNullOrWhiteSpace(Input))
             return;
@@ -147,34 +230,29 @@ public class AICopilotViewModel : ViewModelBase
         Entries.Add(assistantEntry);
 
         IsBusy = true;
-        StatusMessage = "Thinking...";
-
-        _cancellationTokenSource = new CancellationTokenSource();
+        StatusMessage = "Processing request...";
+        ToolActivity.Clear();
 
         try
         {
-            var result = await _conversationService.SendAsync(message, _conversationId, _cancellationTokenSource.Token)
-                .ConfigureAwait(true);
+            var result = await _controller.SendAsync(message).ConfigureAwait(true);
 
             ApplyResult(assistantEntry, result);
         }
         catch (OperationCanceledException)
         {
-            assistantEntry.Text = "Cancelled.";
-            StatusMessage = "Request cancelled.";
+            assistantEntry.Text = "Request cancelled.";
         }
         catch (Exception ex)
         {
+            // Detailed technical information goes to the log; the UI shows a friendly message.
             Log.Error("AI copilot request failed.", ex);
             assistantEntry.Text = "An unexpected error occurred while processing your request.";
-            StatusMessage = "Error.";
+            StatusMessage = "Error";
         }
         finally
         {
-            _cancellationTokenSource?.Dispose();
-            _cancellationTokenSource = null;
             IsBusy = false;
-            StatusMessage = string.Empty;
         }
     }
 
@@ -192,18 +270,21 @@ public class AICopilotViewModel : ViewModelBase
             });
         }
 
+        // Structured evidence — projected only from AIAnalysisResponse/EvidenceContexts, never from AI text.
+        foreach (var item in CopilotEvidenceProjection.Project(result.Response))
+            entry.Evidence.Add(new AIEvidenceDisplayItem { Glyph = item.Glyph, Title = item.Title, Detail = item.Detail });
+
         if (result.ToolExecutions > 0)
-            entry.ToolActivity = $"AI ran {result.ToolExecutions} diagnostic tool call(s).";
-
-        if (result.ToolCallLimitReached)
-            entry.ToolActivity += " Tool-call limit reached.";
-
-        StatusMessage = result.Status.ToString();
+            entry.ToolActivity = $"AI ran {result.ToolExecutions} tool call(s).{(result.ToolCallLimitReached ? " Tool-call limit reached." : string.Empty)}";
     }
 
-    private void Cancel()
+    private static void OnUi(Action action)
     {
-        _cancellationTokenSource?.Cancel();
-        StatusMessage = "Cancelling...";
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+
+        if (dispatcher is null || dispatcher.CheckAccess())
+            action();
+        else
+            dispatcher.Invoke(action);
     }
 }

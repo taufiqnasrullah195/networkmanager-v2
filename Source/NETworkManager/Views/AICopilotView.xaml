@@ -9,20 +9,31 @@
              mc:Ignorable="d" d:DataContext="{d:DesignInstance viewModels:AICopilotViewModel}">
     <Grid Margin="10">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Conversation -->
-        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,10">
+            <TextBlock Text="AI Copilot" Style="{StaticResource HeaderTextBlock}" />
+            <TextBlock Text="Network troubleshooting and administration assistant"
+                       Style="{DynamicResource DefaultTextBlock}" Opacity="0.7" Margin="0,2,0,0" />
+            <TextBlock Text="{Binding ProviderInfo}" Foreground="{DynamicResource MahApps.Brushes.Accent}"
+                       Style="{DynamicResource StatusMessageTextBlock}" Margin="0,4,0,0" />
+        </StackPanel>
+
+        <!-- Chat area -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="360">
             <ItemsControl ItemsSource="{Binding Entries}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type viewModels:AICopilotChatEntry}">
                         <StackPanel Margin="0,0,0,12">
                             <TextBlock Text="{Binding Text}" TextWrapping="Wrap"
                                        Style="{DynamicResource DefaultTextBlock}" />
-                            <!-- Tool activity indicator -->
                             <TextBlock Text="{Binding ToolActivity}" TextWrapping="Wrap"
                                        Foreground="{DynamicResource MahApps.Brushes.Accent}"
                                        Style="{DynamicResource StatusMessageTextBlock}" Margin="0,4,0,0" />
@@ -44,14 +55,60 @@
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
+                            <!-- Structured evidence (from real evidence data, not AI text) -->
+                            <ItemsControl ItemsSource="{Binding Evidence}" Margin="0,4,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type viewModels:AIEvidenceDisplayItem}">
+                                        <Grid Margin="0,0,0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding Glyph}" Margin="0,0,8,0"
+                                                       Foreground="{DynamicResource MahApps.Brushes.Accent}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding Title}" Margin="0,0,8,0"
+                                                       Style="{DynamicResource DefaultTextBlock}" />
+                                            <TextBlock Grid.Column="2" Text="{Binding Detail}" TextWrapping="Wrap"
+                                                       Style="{DynamicResource DefaultTextBlock}" Opacity="0.7" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </StackPanel>
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
         </ScrollViewer>
 
-        <!-- Input -->
-        <Grid Grid.Row="1" Margin="0,10,0,0">
+        <!-- Tool activity panel (live) -->
+        <Border Grid.Row="2" BorderThickness="0,1,0,0" BorderBrush="{DynamicResource MahApps.Brushes.Gray7}"
+                Margin="0,10,0,6" Padding="0,6,0,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="120">
+                <ItemsControl ItemsSource="{Binding ToolActivity}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate DataType="{x:Type viewModels:ToolActivityDisplayItem}">
+                            <Grid Margin="0,0,0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Glyph}" Margin="0,0,8,0"
+                                           Foreground="{DynamicResource MahApps.Brushes.Accent}" />
+                                <TextBlock Grid.Column="1" Text="{Binding ToolName}" Margin="0,0,8,0"
+                                           Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="2" Text="{Binding Detail}" TextWrapping="Wrap"
+                                           Style="{DynamicResource DefaultTextBlock}" Opacity="0.7" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Input area -->
+        <Grid Grid.Row="3" Margin="0,6,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="10" />
@@ -67,8 +124,8 @@
             <Button Grid.Column="4" Content="Cancel" Command="{Binding CancelCommand}" MinWidth="80" />
         </Grid>
 
-        <!-- Status -->
-        <Grid Grid.Row="2" Margin="0,10,0,0">
+        <!-- Status / loading -->
+        <Grid Grid.Row="4" Margin="0,10,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />

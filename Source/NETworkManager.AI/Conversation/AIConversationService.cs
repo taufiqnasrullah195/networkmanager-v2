@@ -71,6 +71,10 @@ public sealed class AIConversationService : IAIConversationService
         {
             return Complete(conversation, ConversationStatus.Failed, ErrorResponse("The AI provider timed out. Please try again."));
         }
+        catch (ProviderException ex) when (ex.ErrorCode == ProviderErrorCode.AuthenticationFailed)
+        {
+            return Complete(conversation, ConversationStatus.Failed, ErrorResponse("Authentication with the AI provider failed. Check the configured credential."));
+        }
         catch (ProviderException)
         {
             return Complete(conversation, ConversationStatus.Failed, ErrorResponse("The AI provider is unavailable. Please try again."));
