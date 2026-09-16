@@ -2,16 +2,16 @@ using NETworkManager.AI.Models;
 
 namespace NETworkManager.AI.Abstractions;
 
-/// <summary>
-///     Executes tools through a controlled boundary: resolve → validate → check approval → execute with timeout/cancellation → enrich.
-///     Never executes arbitrary OS commands; only registered, typed tools.
-/// </summary>
+/// <summary>Controlled execution boundary for network tools (resolve → validate → approve → execute → structured result).</summary>
 public interface IToolExecutionService
 {
-    /// <summary>
-    ///     Executes the named tool with the given (boxed) typed input.
-    ///     Returns a structured, auditable <see cref="ToolResult"/> — never a raw string.
-    /// </summary>
     Task<ToolResult> ExecuteAsync(string toolName, object? input, ToolExecutionContext context,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    ///     Executes a provider-neutral <see cref="AIToolCall"/>: deserializes its JSON arguments into the tool's typed
+    ///     input, then runs the same resolve/validate/execute pipeline. Unknown tools are rejected; tools are never
+    ///     created from a call.
+    /// </summary>
+    Task<ToolResult> ExecuteAsync(AIToolCall toolCall, ToolExecutionContext context, CancellationToken cancellationToken = default);
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using NETworkManager.AI.Abstractions;
 using NETworkManager.AI.Models;
 
@@ -9,11 +10,51 @@ namespace NETworkManager.AI.Execution;
 /// </summary>
 public sealed class ToolExecutionService : IToolExecutionService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     private readonly IToolRegistry _registry;
 
     public ToolExecutionService(IToolRegistry registry)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+    }
+
+    public Task<ToolResult> ExecuteAsync(AIToolCall toolCall, ToolExecutionContext context,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(toolCall);
+
+        var timestamp = DateTimeOffset.UtcNow;
+
+        if (!_registry.TryGet(toolCall.ToolName, out var tool) || tool is null)
+            return Task.FromResult(Fail(toolCall.ToolName, ToolRiskLevel.Low, timestamp, TimeSpan.Zero, requiresApproval: false,
+                "ToolNotFound", $"No tool registered with the name '{toolCall.ToolName}'."));
+
+        object? input = null;
+
+        if (!string.IsNullOrWhiteSpace(toolCall.ArgumentsJson))
+        {
+            try
+            {
+                input = JsonSerializer.Deserialize(toolCall.ArgumentsJson, tool.InputType, JsonOptions);
+            }
+            catch (JsonException ex)
+            {
+                return Task.FromResult(Fail(toolCall.ToolName, tool.RiskLevel, timestamp, TimeSpan.Zero, tool.RequiresApproval,
+                    "InvalidArguments", $"Arguments for '{toolCall.ToolName}' are not valid for '{tool.InputType.Name}': {ex.Message}"));
+            }
+            catch (NotSupportedException ex)
+            {
+                return Task.FromResult(Fail(toolCall.ToolName, tool.RiskLevel, timestamp, TimeSpan.Zero, tool.RequiresApproval,
+                    "InvalidArguments", $"Arguments for '{toolCall.ToolName}' are not valid for '{tool.InputType.Name}': {ex.Message}"));
+            }
+
+            if (input is null)
+                return Task.FromResult(Fail(toolCall.ToolName, tool.RiskLevel, timestamp, TimeSpan.Zero, tool.RequiresApproval,
+                    "InvalidArguments", $"Arguments for '{toolCall.ToolName}' resolved to null."));
+        }
+
+        return ExecuteAsync(toolCall.ToolName, input, context, cancellationToken);
     }
 
     public async Task<ToolResult> ExecuteAsync(string toolName, object? input, ToolExecutionContext context,

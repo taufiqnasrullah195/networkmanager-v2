@@ -1,46 +1,60 @@
-using NETworkManager.AI.Abstractions;
-
 namespace NETworkManager.AI.Models;
 
-/// <summary>A single chat message (provider-neutral role/content pair).</summary>
+/// <summary>A single conversation message (role + content).</summary>
 public sealed record ChatMessage(string Role, string Content);
 
-/// <summary>A prompt request to an <see cref="IAIProvider"/>.</summary>
+/// <summary>Provider-neutral request to an AI provider. All fields optional; a provider uses what it supports.</summary>
 public sealed record AIRequest
 {
-    public required IReadOnlyList<ChatMessage> Messages { get; init; }
+    public string? SystemPrompt { get; init; }
+    public string? UserPrompt { get; init; }
+    public IReadOnlyList<ChatMessage>? Conversation { get; init; }
+
+    /// <summary>Tool definitions advertised to the provider (must originate from the tool registry, never remote input).</summary>
+    public IReadOnlyList<AIToolDefinition>? Tools { get; init; }
+
+    /// <summary>Structured evidence from tools already executed, returned to the provider for its next reasoning turn.</summary>
+    public IReadOnlyList<AIToolResult>? ToolResults { get; init; }
+
+    /// <summary>Explicit, controlled context (hostname, selected device, ...). Never secrets or credentials.</summary>
+    public IReadOnlyDictionary<string, string>? Context { get; init; }
+
+    public IReadOnlyDictionary<string, string>? Metadata { get; init; }
+
+    /// <summary>Optional conversation identity; the agent decides how to manage the state.</summary>
+    public string? ConversationId { get; init; }
 }
 
-/// <summary>A tool invocation the AI is asking the host to perform on its behalf.</summary>
-public sealed record ToolCallRequest(string ToolName, string Arguments);
-
-/// <summary>A structured completion returned by an <see cref="IAIProvider"/>.</summary>
+/// <summary>Provider-neutral response from an AI provider.</summary>
 public sealed record AIResponse
 {
-    public required string Content { get; init; }
-    public IReadOnlyList<ToolCallRequest>? ToolCalls { get; init; }
+    public required bool Success { get; init; }
+    public string? Text { get; init; }
+    public IReadOnlyList<AIToolCall>? ToolCalls { get; init; }
+    public AIFinishReason FinishReason { get; init; } = AIFinishReason.Unknown;
+    public string? Error { get; init; }
+    public ProviderErrorCode? ErrorCode { get; init; }
+    public AIUsage? Usage { get; init; }
+    public IReadOnlyDictionary<string, string>? Metadata { get; init; }
+
+    public static AIResponse Failed(ProviderErrorCode code, string error) =>
+        new() { Success = false, ErrorCode = code, Error = error };
 }
 
-/// <summary>
-///     Provider-neutral description of a tool for later conversion into a vendor function-calling schema.
-///     Deliberately NOT in any vendor's format.
-/// </summary>
-public sealed record AIToolSchema
+/// <summary>Why the provider stopped generating.</summary>
+public enum AIFinishReason
 {
-    public required string Name { get; init; }
-    public required string Description { get; init; }
-    public required string InputSchema { get; init; }
-    public required string OutputSchema { get; init; }
+    Unknown = 0,
+    Stop = 1,
+    Length = 2,
+    ToolCalls = 3,
+    ContentFiltered = 4,
 }
 
-/// <summary>Builds provider-neutral <see cref="AIToolSchema"/> instances from tool metadata.</summary>
-public static class ToolSchemas
+/// <summary>Optional token-usage information; absent when a provider does not report it.</summary>
+public sealed record AIUsage
 {
-    public static AIToolSchema Build(INetworkTool tool) => new()
-    {
-        Name = tool.Name,
-        Description = tool.Description,
-        InputSchema = tool.InputType.Name,
-        OutputSchema = tool.OutputType.Name,
-    };
+    public int? InputTokens { get; init; }
+    public int? OutputTokens { get; init; }
+    public int? TotalTokens { get; init; }
 }
