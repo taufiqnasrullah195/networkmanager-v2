@@ -38,5 +38,5 @@ jobs:
       - name: Build (Release)
         run: dotnet build .\Source\NETworkManager.sln --configuration Release --no-restore --property:Platform=x64
 
-      # Step 1 ships no test projects; the `test` target is introduced in Step 2
-      # and wired into this workflow then. See docs/TECHNICAL-REQUIREMENTS.md §16.
+      - name: Test (NETworkManager.AI.Tests)
+        run: dotnet test .\Source\NETworkManager.AI.Tests\NETworkManager.AI.Tests.csproj --configuration Release --no-restore
