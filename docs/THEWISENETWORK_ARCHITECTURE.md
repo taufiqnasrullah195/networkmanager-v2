@@ -296,6 +296,44 @@ Status:
 - `DefaultSensitiveDataFilter` — **implemented** (redacts secrets before sending to the provider).
 - Reuses `IAgentToolLoop` (STEP 5) and `IDiagnosticAnalyzer`/`DiagnosticEngine` (STEP 6); no new loop-limit system.
 
+### 9.5 AI Copilot UI (implemented)
+
+STEP 8 binds the conversation layer to a minimal WPF chat surface (see `docs/AI_COPILOT_UI.md`):
+
+```
+User
+  |
+  v
+AI Conversation Service
+  |
+  v
+AI Provider
+  |
+  v
+Tool Call
+  |
+  v
+Tool Orchestrator
+  |
+  v
+Diagnostic Engine
+  |
+  v
+Evidence
+  |
+  v
+AI Provider
+  |
+  v
+Response
+```
+
+Status:
+
+- `AICopilotView` / `AICopilotViewModel` / `AICopilotFactory` — **implemented** (chat input, loading, cancellation, tool activity, structured findings).
+- Registered as a standard application (`ApplicationName.AICopilot`) in the existing navigation; no UI redesign.
+- Default provider is the deterministic `MockAIProvider` until a real provider/Custom Agent endpoint is configured at runtime.
+
 ---
 
 ## 10. Agent execution boundary (Planned)
