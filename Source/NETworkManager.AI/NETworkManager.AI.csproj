@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <RootNamespace>NETworkManager.AI</RootNamespace>
+    <AssemblyName>NETworkManager.AI</AssemblyName>
+    <TargetFramework>net10.0</TargetFramework>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\GlobalAssemblyInfo.cs" Link="Properties\GlobalAssemblyInfo.cs" />
+  </ItemGroup>
+
+</Project>
