@@ -113,14 +113,15 @@ All on-disk paths derive from `AssemblyManager.Current.Name` (the **assembly nam
 
 ## 8. Where future TheWiseNetwork functionality will live (Planned)
 
-New sibling projects under `Source/` (not yet created — see `docs/TECHNICAL-REQUIREMENTS.md` §5 and `docs/ROADMAP.md`):
+New sibling projects under `Source/` (see `docs/TECHNICAL-REQUIREMENTS.md` §5 and `docs/ROADMAP.md`). The AI provider/tool foundation exists (Steps 3–4); the rest are planned:
 
 ```
 TheWiseNetwork (product)
 └── Source/
     ├── NETworkManager.*          (existing NETworkManager — unmodified where possible)
-    └── NETworkManager.AI         (Planned)  AI copilot engine + IAIProvider abstraction
-        NETworkManager.AI.Tools   (Planned)  typed tool registry wrapping Models engines
+    └── NETworkManager.AI         (implemented)  provider layer + tool registry + execution (Steps 3–4)
+        NETworkManager.AI.Tools   (implemented)  typed tools wrapping Models engines
+        NETworkManager.AI.Tests   (implemented)  xUnit tests (cross-platform)
         NETworkManager.Policy     (Planned)  risk classification + permission
         NETworkManager.CommandExecution (Planned)  controlled PowerShell/device execution
         NETworkManager.Audit      (Planned)  audit records
@@ -132,7 +133,7 @@ TheWiseNetwork (product)
 
 ---
 
-## 9. AI integration boundary (Planned)
+## 9. AI integration boundary
 
 ```
 User → TheWiseNetwork UI
@@ -144,6 +145,48 @@ User → TheWiseNetwork UI
 ```
 
 Rules: the AI is given a bounded typed tool list; **no unrestricted command execution**; every execution is audited; the AI must not invent tool results.
+
+### 9.1 AI provider layer (implemented)
+
+AI backends are reached only through `IAIProvider` (see `docs/AI_PROVIDERS.md` and
+`docs/CUSTOM_AGENT_PROTOCOL.md`):
+
+```
+                   TheWiseNetwork
+                          |
+                   AI Provider Layer (IAIProvider)
+                          |
+            +-------------+-------------+
+            |             |             |
+       Future API      Local AI    Custom Agent
+       Providers       Provider    Provider (implemented)
+       (NOT IMPLEMENTED)(NOT IMPLEMENTED) |
+                                         |
+                                         v
+                                   External Agent
+                                         |
+                                         v
+                                    Tool Request
+                                         |
+                                         v
+                                    Tool Registry
+                                         |
+                                         v
+                                 Policy / Validation
+                                         |
+                                         v
+                                 Tool Execution
+                                         |
+                                         v
+                                 Network Services
+```
+
+Status:
+
+- `CustomAgentProvider` — **implemented** (HTTP protocol; agent requests tools, never executes them).
+- `MockAIProvider` — **implemented** (test/double provider).
+- Future API providers (OpenAI, Anthropic, OpenRouter, …) — **NOT IMPLEMENTED** (no SDK referenced).
+- Local AI provider — **NOT IMPLEMENTED**.
 
 ---
 
