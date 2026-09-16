@@ -96,6 +96,8 @@
     </ItemDefinitionGroup>
     <ItemGroup>
         <ProjectReference Include="..\3rdparty\Dragablz\Dragablz\Dragablz.csproj" />
+        <ProjectReference Include="..\NETworkManager.AI\NETworkManager.AI.csproj" />
+        <ProjectReference Include="..\NETworkManager.AI.Tools\NETworkManager.AI.Tools.csproj" />
         <ProjectReference Include="..\NETworkManager.Controls\NETworkManager.Controls.csproj" />
         <ProjectReference Include="..\NETworkManager.Converters\NETworkManager.Converters.csproj" />
         <ProjectReference Include="..\NETworkManager.Documentation\NETworkManager.Documentation.csproj" />
