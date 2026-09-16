@@ -436,7 +436,7 @@ public sealed partial class MainWindow : INotifyPropertyChanged
         ConfigureDNSServer();
 
         // Set window title
-        Title = $"NETworkManager {AssemblyManager.Current.Version}";
+        Title = $"TheWiseNetwork {AssemblyManager.Current.Version}";
 
         // Register event system...
         SettingsManager.Current.PropertyChanged += SettingsManager_PropertyChanged;

@@ -2,9 +2,9 @@
 using System.Runtime.InteropServices;
 using System.Windows;
 
-[assembly: AssemblyTitle("NETworkManager")]
-[assembly: AssemblyDescription("A powerful open-source tool for managing networks and troubleshooting network problems!")]
-[assembly: AssemblyProduct("NETworkManager")]
+[assembly: AssemblyTitle("TheWiseNetwork")]
+[assembly: AssemblyDescription("TheWiseNetwork — an AI-ready network administration and diagnostics platform built on NETworkManager.")]
+[assembly: AssemblyProduct("TheWiseNetwork")]
 [assembly: ComVisible(false)]
 [assembly: ThemeInfo(
     ResourceDictionaryLocation.None,
