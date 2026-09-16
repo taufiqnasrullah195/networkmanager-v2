@@ -338,6 +338,40 @@ Status:
 
 ---
 
+### 9.6 Network Monitoring & Health Engine (implemented)
+
+STEP 9 adds continuous, read-only observation (see `docs/NETWORK_MONITORING.md`):
+
+```
+WPF (NetworkMonitoringView)                  AI Copilot (network_monitoring_status)
+        │                                                    │
+        ▼                                                    ▼
+ NetworkMonitoringViewModel ──► IMonitoringEngine ◄── IMonitoringQuery
+                                    │
+                     ┌──────────────┴───────────────┐
+                     ▼                              ▼
+           MonitoringScheduler               MonitoringStateStore
+                     │
+                     ▼
+            MonitoringCheckExecutor ──► ping / tcp_test / dns_lookup (Step 3 tools)
+                     │
+                     ▼
+              MonitoringResult ──► HealthEvaluator ──► NetworkHealthStatus ──► MonitoringEvent
+```
+
+Status:
+
+- `MonitoringTarget`/`MonitoringCheck`/`MonitoringResult`/`MonitoringEvidence`/`NetworkHealthStatus` — **implemented**.
+- `MonitoringEngine` + `MonitoringScheduler` — **implemented** (one loop, `SemaphoreSlim`-bounded concurrency, per-check timeouts, cancellation, graceful stop, idempotent start/stop).
+- `HealthEvaluator` — **implemented** (deterministic; timeout/unreachable/DNS/TCP kept distinct; never infers "down" from missing/blocked ICMP).
+- `IMonitoringStateStore` (in-memory) + `IMonitoringObserver` events (`HealthStateChanged` only on real transitions) — **implemented**, persistence-ready.
+- `MonitoringProfile`/`MonitoringProfileStore` — **implemented** (JSON, checksummed, no secrets; targets externalized).
+- `network_monitoring_status` (LOW/read-only, depends on `IMonitoringQuery` only) — **implemented**; registered in the copilot registry.
+- `NetworkMonitoringView`/`ViewModel` — **implemented** (minimal status table; engine lifecycle view-scoped this step).
+- Reuses the upstream `Ping`/`DNSLookup` engines via the Step 3 wrappers (no duplicate networking); upstream WPF Ping Monitor untouched.
+
+---
+
 ## 10. Agent execution boundary (Planned)
 
 Future agents (discovery, troubleshooting, monitoring, security, configuration, documentation) execute only through the same policy-gated tool/command layer. No agent runs arbitrary code. Multi-agent architecture is **not** implemented prematurely.

@@ -57,6 +57,7 @@ tested anywhere, while tools that need a live network stack stay Windows-only.
 | `network_adapter_info` | NetworkInterface | LOW | No | `NetworkAdapterInput` → `NetworkAdapterResult` | `NETworkManager.Models.Network.NetworkInterface` |
 | `routing_table` | Routing | LOW | No | `RoutingTableInput` → `RoutingTableResult` | Win32 `GetIpForwardTable` (read-only) |
 | `internet_connectivity_diagnostic` | Connectivity | LOW | No | `InternetConnectivityDiagnosticInput` → `DiagnosticReport` | `DiagnosticEngine` (Step 6) |
+| `network_monitoring_status` | Monitoring | LOW | No | `MonitoringStatusInput` → `MonitoringStatusResult` | `IMonitoringQuery` / `MonitoringEngine` (Step 9, read-only) |
 
 All six core tools are **LOW risk and read-only** by design: diagnostics first, no mutation, no shell
 execution. `routing_table` currently supports IPv4 only; IPv6 returns a structured
