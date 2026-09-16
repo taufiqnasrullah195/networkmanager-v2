@@ -132,6 +132,9 @@ public static class ApplicationManager
             case ApplicationName.AICopilot:
                 canvas.Children.Add(new PackIconMaterial { Kind = PackIconMaterialKind.RobotOutline });
                 break;
+            case ApplicationName.NetworkMonitoring:
+                canvas.Children.Add(new PackIconMaterial { Kind = PackIconMaterialKind.HeartPulse });
+                break;
             case ApplicationName.None:
             case ApplicationName.AWSSessionManager:
             default:

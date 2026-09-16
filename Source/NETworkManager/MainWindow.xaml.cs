@@ -678,6 +678,7 @@ public sealed partial class MainWindow : INotifyPropertyChanged
     private TracerouteHostView _tracerouteHostView;
     private DNSLookupHostView _dnsLookupHostView;
     private AICopilotView _aiCopilotView;
+    private NetworkMonitoringView _networkMonitoringView;
     private RemoteDesktopHostView _remoteDesktopHostView;
     private PowerShellHostView _powerShellHostView;
     private PuTTYHostView _puttyHostView;
@@ -847,6 +848,11 @@ public sealed partial class MainWindow : INotifyPropertyChanged
                 _aiCopilotView ??= new AICopilotView();
 
                 ContentControlApplication.Content = _aiCopilotView;
+                break;
+            case ApplicationName.NetworkMonitoring:
+                _networkMonitoringView ??= new NetworkMonitoringView();
+
+                ContentControlApplication.Content = _networkMonitoringView;
                 break;
             case ApplicationName.DiscoveryProtocol:
                 if (_discoveryProtocolView == null)

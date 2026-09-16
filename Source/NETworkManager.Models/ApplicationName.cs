@@ -108,6 +108,11 @@ public enum ApplicationName
     AICopilot,
 
     /// <summary>
+    ///     Network monitoring application (TheWiseNetwork extension, Step 9).
+    /// </summary>
+    NetworkMonitoring,
+
+    /// <summary>
     ///     Discovery protocol application.
     /// </summary>
     DiscoveryProtocol,

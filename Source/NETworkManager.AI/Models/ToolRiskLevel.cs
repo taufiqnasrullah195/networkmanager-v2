@@ -20,4 +20,5 @@ public enum ToolCategory
     PathDiscovery = 2,
     NetworkInterface = 3,
     Routing = 4,
+    Monitoring = 5,
 }

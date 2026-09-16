@@ -47,6 +47,7 @@ public sealed class PingTool : INetworkTool
         var roundTrips = new List<long>();
         var received = 0;
         var sent = 0;
+        var timedOut = 0;
         string? engineError = null;
 
         var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -63,6 +64,10 @@ public sealed class PingTool : INetworkTool
             {
                 received++;
                 roundTrips.Add(e.Args.Time);
+            }
+            else if (e.Args.Status == System.Net.NetworkInformation.IPStatus.TimedOut)
+            {
+                timedOut++;
             }
 
             if (sent >= pingInput.Count)
@@ -94,6 +99,7 @@ public sealed class PingTool : INetworkTool
             Success = success,
             Sent = sent,
             Received = received,
+            TimedOutCount = timedOut,
             PacketLossPercent = packetLoss,
             MinLatencyMilliseconds = roundTrips.Count > 0 ? roundTrips.Min() : 0,
             MaxLatencyMilliseconds = roundTrips.Count > 0 ? roundTrips.Max() : 0,

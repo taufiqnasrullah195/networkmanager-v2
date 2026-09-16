@@ -10,6 +10,8 @@ public sealed record PingResult
     public required bool Success { get; init; }
     public int Sent { get; init; }
     public int Received { get; init; }
+    /// <summary>Number of probes whose reply was ICMP <c>TimedOut</c> (no reply within the timeout).</summary>
+    public int TimedOutCount { get; init; }
     public double PacketLossPercent { get; init; }
     public long MinLatencyMilliseconds { get; init; }
     public long MaxLatencyMilliseconds { get; init; }

@@ -5,6 +5,7 @@ using NETworkManager.AI.Abstractions;
 using NETworkManager.AI.Conversation;
 using NETworkManager.AI.Diagnostics;
 using NETworkManager.AI.Execution;
+using NETworkManager.AI.Monitoring;
 using NETworkManager.AI.Orchestration;
 using NETworkManager.AI.Providers;
 using NETworkManager.AI.Providers.Authentication;
@@ -49,6 +50,9 @@ public static class AICopilotFactory
         var execution = new ToolExecutionService(registry);
         var diagnostics = new DiagnosticEngine(execution, notifier);
         registry.Register(new InternetConnectivityDiagnosticTool(diagnostics));
+
+        // Expose the Step 9 monitoring state to the copilot as a read-only tool (no mutation path).
+        registry.Register(new MonitoringStatusTool(MonitoringComposition.Instance.Engine));
 
         var orchestrator = new ToolCallOrchestrator(registry, execution, logger: notifier);
 
