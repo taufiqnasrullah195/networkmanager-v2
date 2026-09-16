@@ -30,6 +30,11 @@ NETworkManager engine / OS / network       "the real work"
 
 The AI layer never calls an arbitrary OS command. It can only name a tool and pass typed input.
 
+The `internet_connectivity_diagnostic` tool (Step 6) is a **high-level, composite, read-only** capability: it runs
+the Internet Connectivity Diagnostic workflow through the `DiagnosticEngine` and returns a `DiagnosticReport`. A
+future Custom Agent requests it as a single tool call and reasons over the resulting evidence — it never needs to
+know the internal steps. See `docs/DIAGNOSTIC_ENGINE.md`.
+
 ## Project layout
 
 | Project | Target framework | Purpose |
@@ -51,8 +56,9 @@ tested anywhere, while tools that need a live network stack stay Windows-only.
 | `traceroute` | PathDiscovery | LOW | No | `TracerouteInput` → `TracerouteResult` | `NETworkManager.Models.Network.Traceroute` |
 | `network_adapter_info` | NetworkInterface | LOW | No | `NetworkAdapterInput` → `NetworkAdapterResult` | `NETworkManager.Models.Network.NetworkInterface` |
 | `routing_table` | Routing | LOW | No | `RoutingTableInput` → `RoutingTableResult` | Win32 `GetIpForwardTable` (read-only) |
+| `internet_connectivity_diagnostic` | Connectivity | LOW | No | `InternetConnectivityDiagnosticInput` → `DiagnosticReport` | `DiagnosticEngine` (Step 6) |
 
-All six are **LOW risk and read-only** by design: diagnostics first, no mutation, no shell
+All six core tools are **LOW risk and read-only** by design: diagnostics first, no mutation, no shell
 execution. `routing_table` currently supports IPv4 only; IPv6 returns a structured
 `NotImplemented` error (see Known Issues).
 

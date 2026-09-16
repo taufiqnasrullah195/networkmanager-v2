@@ -227,6 +227,35 @@ Status:
 
 The AI reasons; TheWiseNetwork validates, authorises, and executes; the tools observe; the evidence returns to the AI.
 
+### 9.3 Diagnostic Engine (implemented)
+
+STEP 6 layers a deterministic, read-only diagnostic engine underneath the orchestration boundary
+(see `docs/DIAGNOSTIC_ENGINE.md`):
+
+```
+AI / Custom Agent
+  |
+  v
+Tool Orchestrator
+  |
+  v
+Diagnostic Engine
+  |
+  v
+Diagnostic Tools
+  |
+  v
+Network / OS
+```
+
+Status:
+
+- `DiagnosticEngine` — **implemented** (runs a `DiagnosticWorkflow` through the tool execution service, collects ordered evidence).
+- `DiagnosticWorkflow` / `DiagnosticStep` — **implemented** (reusable, dependency-aware step definitions).
+- `DefaultDiagnosticAnalyzer` — **implemented** (deterministic evidence → failure classification + recommendation).
+- `InternetConnectivityDiagnostic` — **implemented** (8-step read-only workflow: adapter → IP → route → gateway → DNS → external → TCP → traceroute).
+- `InternetConnectivityDiagnosticTool` — **implemented** (exposes the workflow as one `LOW`-risk registered tool).
+
 ---
 
 ## 10. Agent execution boundary (Planned)
