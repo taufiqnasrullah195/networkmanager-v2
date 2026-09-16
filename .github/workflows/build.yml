@@ -21,6 +21,17 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
+      - name: Set version (date-based, mirrors upstream AppVeyor)
+        shell: pwsh
+        run: |
+          $VersionString = (Get-Date).ToString("yyyy.M.d.0")
+          $file = ".\Source\GlobalAssemblyInfo.cs"
+          $content = Get-Content $file -Raw
+          $content = $content -replace '\[assembly: AssemblyVersion\(".*"\)\]', "[assembly: AssemblyVersion(""$VersionString"")]"
+          $content = $content -replace '\[assembly: AssemblyFileVersion\(".*"\)\]', "[assembly: AssemblyFileVersion(""$VersionString"")]"
+          Set-Content -Path $file -Value $content -Encoding utf8
+          Write-Host "Version set to $VersionString"
+
       - name: Restore
         run: dotnet restore .\Source\NETworkManager.sln
 
