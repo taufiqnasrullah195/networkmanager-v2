@@ -256,6 +256,46 @@ Status:
 - `InternetConnectivityDiagnostic` — **implemented** (8-step read-only workflow: adapter → IP → route → gateway → DNS → external → TCP → traceroute).
 - `InternetConnectivityDiagnosticTool` — **implemented** (exposes the workflow as one `LOW`-risk registered tool).
 
+### 9.4 AI Conversation & evidence-based reasoning (implemented)
+
+STEP 7 adds the first real interaction layer: an evidence-aware conversation service (see `docs/AI_CONVERSATION.md`):
+
+```
+User
+  |
+  v
+AI Conversation Service
+  |
+  v
+AI Provider
+  |
+  v
+Tool Call
+  |
+  v
+Tool Orchestrator
+  |
+  v
+Diagnostic Engine
+  |
+  v
+Evidence
+  |
+  v
+AI Provider
+  |
+  v
+Response
+```
+
+Status:
+
+- `IAIConversationService` / `AIConversationService` — **implemented** (in-memory conversation → provider loop → structured response).
+- `AIConversation` / `AIMessage` / `AIAnalysisResponse` / `AIFinding` / `AIEvidenceContext` — **implemented** (provider-neutral).
+- `NetworkDiagnosticInstructions` — **implemented** (controlled system prompt: evidence-first, no fabrication, restricted access).
+- `DefaultSensitiveDataFilter` — **implemented** (redacts secrets before sending to the provider).
+- Reuses `IAgentToolLoop` (STEP 5) and `IDiagnosticAnalyzer`/`DiagnosticEngine` (STEP 6); no new loop-limit system.
+
 ---
 
 ## 10. Agent execution boundary (Planned)
