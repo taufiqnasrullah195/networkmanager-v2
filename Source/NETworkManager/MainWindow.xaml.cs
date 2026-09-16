@@ -677,6 +677,7 @@ public sealed partial class MainWindow : INotifyPropertyChanged
     private PingMonitorHostView _pingMonitorHostView;
     private TracerouteHostView _tracerouteHostView;
     private DNSLookupHostView _dnsLookupHostView;
+    private AICopilotView _aiCopilotView;
     private RemoteDesktopHostView _remoteDesktopHostView;
     private PowerShellHostView _powerShellHostView;
     private PuTTYHostView _puttyHostView;
@@ -841,6 +842,11 @@ public sealed partial class MainWindow : INotifyPropertyChanged
                     _firewallView.OnViewVisible();
 
                 ContentControlApplication.Content = _firewallView;
+                break;
+            case ApplicationName.AICopilot:
+                _aiCopilotView ??= new AICopilotView();
+
+                ContentControlApplication.Content = _aiCopilotView;
                 break;
             case ApplicationName.DiscoveryProtocol:
                 if (_discoveryProtocolView == null)

@@ -103,6 +103,11 @@ public enum ApplicationName
     Firewall,
 
     /// <summary>
+    ///     AI copilot application (TheWiseNetwork extension, Step 8).
+    /// </summary>
+    AICopilot,
+
+    /// <summary>
     ///     Discovery protocol application.
     /// </summary>
     DiscoveryProtocol,

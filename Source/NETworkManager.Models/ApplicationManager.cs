@@ -129,6 +129,9 @@ public static class ApplicationManager
             case ApplicationName.Firewall:
                 canvas.Children.Add(new PackIconMaterial { Kind = PackIconMaterialKind.WallFire });
                 break;
+            case ApplicationName.AICopilot:
+                canvas.Children.Add(new PackIconMaterial { Kind = PackIconMaterialKind.RobotOutline });
+                break;
             case ApplicationName.None:
             case ApplicationName.AWSSessionManager:
             default:
