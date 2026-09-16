@@ -11,6 +11,7 @@ public sealed record AIToolCall
 /// <summary>Structured evidence returned after a tool executes; sent back to the provider/agent for its next turn.</summary>
 public sealed record AIToolResult
 {
+    public string? CallId { get; init; }
     public required string ToolName { get; init; }
     public required bool Success { get; init; }
     public object? Data { get; init; }

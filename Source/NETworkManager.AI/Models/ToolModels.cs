@@ -24,7 +24,13 @@ public sealed record ToolOutcome
 public sealed record ToolExecutionContext
 {
     public string? User { get; init; }
+    public string? ProviderId { get; init; }
+    public string? AgentId { get; init; }
+    public string? ConversationId { get; init; }
+    public string? ToolCallId { get; init; }
     public bool? ApprovalGranted { get; init; }
+    public string? ApprovalId { get; init; }
+    public IReadOnlyDictionary<string, string>? Metadata { get; init; }
 }
 
 /// <summary>Typed tool inputs implement this so the execution service can validate before running.</summary>
