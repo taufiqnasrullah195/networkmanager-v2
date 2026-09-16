@@ -113,13 +113,13 @@ All on-disk paths derive from `AssemblyManager.Current.Name` (the **assembly nam
 
 ## 8. Where future TheWiseNetwork functionality will live (Planned)
 
-New sibling projects under `Source/` (see `docs/TECHNICAL-REQUIREMENTS.md` §5 and `docs/ROADMAP.md`). The AI provider/tool foundation exists (Steps 3–4); the rest are planned:
+New sibling projects under `Source/` (see `docs/TECHNICAL-REQUIREMENTS.md` §5 and `docs/ROADMAP.md`). The AI provider/tool foundation exists (Steps 3–5); the rest are planned:
 
 ```
 TheWiseNetwork (product)
 └── Source/
     ├── NETworkManager.*          (existing NETworkManager — unmodified where possible)
-    └── NETworkManager.AI         (implemented)  provider layer + tool registry + execution (Steps 3–4)
+    └── NETworkManager.AI         (implemented)  provider layer + tool registry + execution + orchestration (Steps 3–5)
         NETworkManager.AI.Tools   (implemented)  typed tools wrapping Models engines
         NETworkManager.AI.Tests   (implemented)  xUnit tests (cross-platform)
         NETworkManager.Policy     (Planned)  risk classification + permission
@@ -187,6 +187,45 @@ Status:
 - `MockAIProvider` — **implemented** (test/double provider).
 - Future API providers (OpenAI, Anthropic, OpenRouter, …) — **NOT IMPLEMENTED** (no SDK referenced).
 - Local AI provider — **NOT IMPLEMENTED**.
+
+### 9.2 Tool call orchestration (implemented)
+
+STEP 5 connects the provider layer to the typed tools through a controlled orchestration boundary
+(see `docs/AI_TOOL_ORCHESTRATION.md`):
+
+```
+Custom Agent
+  |
+  v
+AI Tool Call
+  |
+  v
+Tool Call Orchestrator
+  |
+  +--> Tool Registry
+  |
+  +--> Policy
+  |
+  +--> Approval
+  |
+  v
+Tool Execution
+  |
+  v
+Structured Result
+  |
+  v
+Custom Agent
+```
+
+Status:
+
+- `ToolCallOrchestrator` — **implemented** (resolve → validate → policy → approval → execute → structured outcome).
+- `DefaultToolPolicyService` — **implemented** (LOW allow, MEDIUM/HIGH require approval, CRITICAL deny).
+- `DefaultToolApprovalService` — **implemented** (approval read from context; interactive UI later).
+- `AgentToolLoop` — **implemented** (bounded multi-round loop with maximum-rounds/repeated-call protection).
+
+The AI reasons; TheWiseNetwork validates, authorises, and executes; the tools observe; the evidence returns to the AI.
 
 ---
 
