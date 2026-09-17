@@ -99,12 +99,30 @@ public sealed class MonitoringCheckItemViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }
 
+/// <summary>Read-only display row for an active alert in the monitoring view.</summary>
+public sealed class AlertRowViewModel
+{
+    public string AlertId { get; init; } = string.Empty;
+    public string Severity { get; init; } = string.Empty;
+    public string Target { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string Title { get; init; } = string.Empty;
+    public string Occurrences { get; init; } = string.Empty;
+    public string FirstSeen { get; init; } = string.Empty;
+    public string LastSeen { get; init; } = string.Empty;
+    public string Reason { get; init; } = string.Empty;
+    public string Evidence { get; init; } = string.Empty;
+    public string Transition { get; init; } = string.Empty;
+    public string Resolution { get; init; } = string.Empty;
+    public string Classification { get; init; } = string.Empty;
+}
+
 /// <summary>
 ///     Monitoring management view model: profile CRUD + editor draft + global start/stop + runtime status.
 ///     All configuration goes through <see cref="IMonitoringProfileService"/>; all runtime through the shared engine.
 ///     No persistence logic lives here.
 /// </summary>
-public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver
+public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IAlertObserver
 {
     private static readonly ILog Log = LogManager.GetLogger(typeof(NetworkMonitoringViewModel));
 
@@ -179,6 +197,23 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver
 
     public string[] CheckTypeOptions { get; } = Enum.GetNames<MonitorCheckType>();
 
+    public ObservableCollection<AlertRowViewModel> Alerts { get; } = [];
+
+    private AlertRowViewModel? _selectedAlert;
+
+    public AlertRowViewModel? SelectedAlert
+    {
+        get => _selectedAlert;
+        set
+        {
+            _selectedAlert = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private string _alertCount = "0 active alerts";
+    public string AlertCount { get => _alertCount; private set { _alertCount = value; OnPropertyChanged(); } }
+
     // ----- commands ---------------------------------------------------------
 
     public ICommand StartMonitoringCommand { get; }
@@ -195,6 +230,8 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver
     public ICommand RemoveTargetCommand { get; }
     public ICommand AddCheckCommand { get; }
     public ICommand RemoveCheckCommand { get; }
+
+    public ICommand AcknowledgeAlertCommand { get; }
 
     public NetworkMonitoringViewModel(IMonitoringProfileService profileService)
     {
@@ -214,8 +251,10 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver
         RemoveTargetCommand = new RelayCommand(p => RemoveTarget((MonitoringTargetItemViewModel)p!), _ => IsEditing);
         AddCheckCommand = new RelayCommand(_ => AddCheck(), _ => IsEditing);
         RemoveCheckCommand = new RelayCommand(p => RemoveCheck((MonitoringCheckItemViewModel)p!), _ => IsEditing);
+        AcknowledgeAlertCommand = new RelayCommand(_ => AcknowledgeSelectedAlert(), _ => SelectedAlert is { Status: "Open" });
 
         MonitoringComposition.Instance.Subscribe(this);
+        AlertComposition.Alerts.Subscribe(this);
     }
 
     public MonitoringProfileListItemViewModel? SelectedProfile
@@ -494,6 +533,8 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver
             var concurrency = ParseConcurrency();
             var engine = MonitoringComposition.Rebuild(concurrency);
             engine.Subscribe(this);
+            engine.Subscribe(AlertComposition.Alerts);
+            AlertComposition.Alerts.Start();
 
             MonitoringConfigurationApplier.Apply(engine, profiles);
             await engine.StartAsync();
@@ -551,11 +592,67 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver
             HealthyCount = snapshots.Count(s => s.Health == NetworkHealthStatus.Healthy);
             DegradedCount = snapshots.Count(s => s.Health == NetworkHealthStatus.Degraded);
             UnhealthyCount = snapshots.Count(s => s.Health == NetworkHealthStatus.Unhealthy);
+
+            RefreshAlerts();
         }
         catch (Exception ex)
         {
             Log.Error("Failed to read monitoring status.", ex);
         }
+    }
+
+    private void RefreshAlerts()
+    {
+        try
+        {
+            var active = AlertComposition.Alerts.GetActiveAlerts();
+
+            var selectedId = SelectedAlert?.AlertId;
+
+            Alerts.Clear();
+            foreach (var alert in active)
+            {
+                Alerts.Add(new AlertRowViewModel
+                {
+                    AlertId = alert.AlertId,
+                    Severity = alert.Severity.ToString(),
+                    Target = alert.TargetName,
+                    Status = alert.Status.ToString(),
+                    Title = alert.Title,
+                    Occurrences = alert.OccurrenceCount.ToString(),
+                    FirstSeen = alert.FirstSeenAt.ToLocalTime().ToString("HH:mm:ss"),
+                    LastSeen = alert.LastSeenAt.ToLocalTime().ToString("HH:mm:ss"),
+                    Reason = alert.Reason ?? string.Empty,
+                    Evidence = alert.Evidence ?? string.Empty,
+                    Transition = $"{alert.PreviousHealthState} → {alert.CurrentHealthState}",
+                    Resolution = alert.ResolvedAt is null ? string.Empty : $"Resolved {alert.ResolvedAt.Value.ToLocalTime():HH:mm:ss} — {alert.ResolutionEvidence}",
+                    Classification = alert.FailureClassification ?? string.Empty,
+                });
+            }
+
+            AlertCount = $"{Alerts.Count} active alert(s)";
+
+            if (selectedId is not null)
+                SelectedAlert = Alerts.FirstOrDefault(a => a.AlertId == selectedId);
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Failed to read alert state.", ex);
+        }
+    }
+
+    public void OnAlertEvent(AlertEvent e)
+    {
+        OnUi(RefreshAlerts);
+    }
+
+    private void AcknowledgeSelectedAlert()
+    {
+        if (SelectedAlert is null)
+            return;
+
+        AlertComposition.Alerts.AcknowledgeAlert(SelectedAlert.AlertId);
+        RefreshAlerts();
     }
 
     // ----- helpers ----------------------------------------------------------

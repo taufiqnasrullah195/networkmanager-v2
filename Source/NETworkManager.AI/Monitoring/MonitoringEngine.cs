@@ -291,6 +291,7 @@ public sealed class MonitoringEngine : IMonitoringEngine
             TargetId = target.Id,
             CheckId = check.CheckId,
             Message = result.SafeMessage,
+            Result = result,
         });
 
         if (result.Status == MonitoringResultStatus.Error)
@@ -303,6 +304,7 @@ public sealed class MonitoringEngine : IMonitoringEngine
                 TargetId = target.Id,
                 CheckId = check.CheckId,
                 Message = result.SafeMessage,
+                Result = result,
             });
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using NETworkManager.AI.Abstractions;
+using NETworkManager.AI.Alerts;
 using NETworkManager.AI.Conversation;
 using NETworkManager.AI.Diagnostics;
 using NETworkManager.AI.Execution;
@@ -53,6 +54,9 @@ public static class AICopilotFactory
 
         // Expose the Step 9 monitoring state to the copilot as a read-only tool (no mutation path).
         registry.Register(new MonitoringStatusTool(MonitoringComposition.Instance));
+
+        // Expose the Step 11 alert state to the copilot as a read-only tool (no acknowledge/resolve path).
+        registry.Register(new NetworkAlertsTool(AlertComposition.Alerts));
 
         var orchestrator = new ToolCallOrchestrator(registry, execution, logger: notifier);
 

@@ -255,5 +255,59 @@
                 </Grid>
             </Border>
         </Grid>
+
+        <!-- Alerts -->
+        <Grid Grid.Row="3" Margin="0,10,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="{Binding AlertCount}" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,0,4" />
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="360" />
+                </Grid.ColumnDefinitions>
+                <ListBox Grid.Column="0" ItemsSource="{Binding Alerts}" SelectedItem="{Binding SelectedAlert, Mode=TwoWay}" MaxHeight="140">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type viewModels:AlertRowViewModel}">
+                            <Grid Margin="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="90" />
+                                    <ColumnDefinition Width="150" />
+                                    <ColumnDefinition Width="100" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Severity}" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="1" Text="{Binding Target}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="2" Text="{Binding Status}" Style="{DynamicResource DefaultTextBlock}" Opacity="0.8" />
+                                <TextBlock Grid.Column="3" Text="{Binding Title}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <Border Grid.Column="2" BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.Gray7}" Padding="8">
+                    <StackPanel DataContext="{Binding SelectedAlert}">
+                        <TextBlock Text="{Binding Title}" FontWeight="Bold" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" />
+                        <TextBlock Text="{Binding Transition}" Margin="0,4,0,0" Style="{DynamicResource DefaultTextBlock}" />
+                        <TextBlock Style="{DynamicResource DefaultTextBlock}" Opacity="0.8" Margin="0,4,0,0">
+                            <TextBlock.Text>
+                                <MultiBinding StringFormat="{}{0} · {1} · {2} occurrence(s)">
+                                    <Binding Path="Severity" />
+                                    <Binding Path="Status" />
+                                    <Binding Path="Occurrences" />
+                                </MultiBinding>
+                            </TextBlock.Text>
+                        </TextBlock>
+                        <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" Margin="0,4,0,0" Style="{DynamicResource DefaultTextBlock}" />
+                        <TextBlock Text="{Binding Evidence}" TextWrapping="Wrap" Margin="0,4,0,0" Opacity="0.8" Style="{DynamicResource DefaultTextBlock}" />
+                        <TextBlock Text="{Binding Resolution}" TextWrapping="Wrap" Margin="0,4,0,0" Style="{DynamicResource DefaultTextBlock}" />
+                        <Button Content="Acknowledge" Command="{Binding DataContext.AcknowledgeAlertCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                Margin="0,8,0,0" HorizontalAlignment="Left" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
     </Grid>
 </UserControl>

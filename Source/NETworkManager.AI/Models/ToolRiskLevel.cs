@@ -21,4 +21,5 @@ public enum ToolCategory
     NetworkInterface = 3,
     Routing = 4,
     Monitoring = 5,
+    Alerts = 6,
 }

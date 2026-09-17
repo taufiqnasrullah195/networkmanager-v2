@@ -183,4 +183,7 @@ public sealed record MonitoringEvent
     public string? Message { get; init; }
 
     public HealthStateChange? StateChange { get; init; }
+
+    /// <summary>The result that produced this event (populated for MonitoringCompleted/MonitoringFailed).</summary>
+    public MonitoringResult? Result { get; init; }
 }
