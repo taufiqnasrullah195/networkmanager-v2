@@ -9,7 +9,7 @@ namespace NETworkManager.AI.Tests;
 public class SnmpPersistenceTests
 {
     [Fact]
-    public async Task Fresh_database_is_schema_version_2()
+    public async Task Fresh_database_is_schema_version_3()
     {
         using var db = new SqliteTestDb();
         await db.InitializeAsync();
@@ -17,13 +17,13 @@ public class SnmpPersistenceTests
         using var connection = new SqliteConnection($"Data Source={db.Database.Path}");
         connection.Open();
 
-        Assert.Equal(2L, Scalar(connection, "PRAGMA user_version;"));
+        Assert.Equal(3L, Scalar(connection, "PRAGMA user_version;"));
         Assert.NotNull(Scalar(connection, "SELECT name FROM sqlite_master WHERE name = 'snmp_device_telemetry';"));
         Assert.NotNull(Scalar(connection, "SELECT name FROM sqlite_master WHERE name = 'snmp_interface_telemetry';"));
     }
 
     [Fact]
-    public async Task Migrates_v1_database_to_v2()
+    public async Task Migrates_v1_database_to_latest()
     {
         using var db = new SqliteTestDb();
 
@@ -38,7 +38,7 @@ public class SnmpPersistenceTests
 
         using var connection2 = new SqliteConnection($"Data Source={db.Database.Path}");
         connection2.Open();
-        Assert.Equal(2L, Scalar(connection2, "PRAGMA user_version;"));
+        Assert.Equal(3L, Scalar(connection2, "PRAGMA user_version;"));
         Assert.NotNull(Scalar(connection2, "SELECT name FROM sqlite_master WHERE name = 'snmp_interface_telemetry';"));
     }
 

@@ -686,6 +686,9 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
             engine.Subscribe(AlertComposition.Alerts);
             AlertComposition.Alerts.Start();
 
+            // Wire the notification engine (Step 15) to the alert engine's lifecycle events.
+            _ = NotificationComposition.Engine;
+
             MonitoringConfigurationApplier.Apply(engine, profiles);
             await engine.StartAsync();
         }

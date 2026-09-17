@@ -14,6 +14,7 @@
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <!-- Header -->
@@ -250,6 +251,51 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Grid.Column="0" Text="{Binding Target}" Style="{DynamicResource DefaultTextBlock}" />
                                     <TextBlock Grid.Column="1" Text="{Binding Availability}" Style="{DynamicResource DefaultTextBlock}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Grid>
+
+            <!-- Notifications -->
+            <Grid Grid.Row="5" Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                    <Button DockPanel.Dock="Right" Content="Test Notification" Command="{Binding TestNotificationCommand}" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Notifications" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
+                        <TextBlock Text="{Binding NotificationStatus}" Margin="10,0,0,0" Foreground="{DynamicResource MahApps.Brushes.Accent}" VerticalAlignment="Center" Style="{DynamicResource DefaultTextBlock}" />
+                    </StackPanel>
+                </DockPanel>
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="220" />
+                        <ColumnDefinition Width="12" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <ListBox Grid.Column="0" ItemsSource="{Binding NotificationChannels}" MaxHeight="100" />
+                    <ListBox Grid.Column="2" ItemsSource="{Binding Notifications}" MaxHeight="100">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:DashboardNotificationRow}">
+                                <Grid Margin="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="60" />
+                                        <ColumnDefinition Width="120" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="130" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="60" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Time}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Alert}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Channel}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="3" Text="{Binding Event}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="4" Text="{Binding Status}" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="5" Text="{Binding Attempts}" Style="{DynamicResource DefaultTextBlock}" />
                                 </Grid>
                             </DataTemplate>
                         </ListBox.ItemTemplate>

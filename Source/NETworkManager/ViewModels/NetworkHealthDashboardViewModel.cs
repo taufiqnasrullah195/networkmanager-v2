@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using log4net;
 using NETworkManager.AI.Dashboard;
+using NETworkManager.AI.Notifications;
 using NETworkManager.Utilities;
 
 namespace NETworkManager.ViewModels;
@@ -68,6 +69,17 @@ public sealed class DashboardAvailabilityRow
     public string Availability { get; init; } = "—";
 }
 
+/// <summary>Read-only display row for one notification delivery.</summary>
+public sealed class DashboardNotificationRow
+{
+    public string Time { get; init; } = string.Empty;
+    public string Alert { get; init; } = string.Empty;
+    public string Channel { get; init; } = string.Empty;
+    public string Event { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string Attempts { get; init; } = string.Empty;
+}
+
 /// <summary>
 ///     Presentation-only view model for the Network Health Dashboard (Step 14). Aggregates the existing services via
 ///     <see cref="DashboardAggregator"/> — no monitoring/alert/SNMP/AI logic lives here.
@@ -121,6 +133,15 @@ public class NetworkHealthDashboardViewModel : ViewModelBase
     public ObservableCollection<DashboardLatencyRow> Latency { get; } = [];
     public ObservableCollection<DashboardAvailabilityRow> Availability { get; } = [];
 
+    public ObservableCollection<DashboardNotificationRow> Notifications { get; } = [];
+
+    public ObservableCollection<string> NotificationChannels { get; } = [];
+
+    private string _notificationStatus = string.Empty;
+    public string NotificationStatus { get => _notificationStatus; private set { _notificationStatus = value; OnPropertyChanged(); } }
+
+    public ICommand TestNotificationCommand { get; }
+
     public string[] StatusFilterOptions { get; } = ["All", "Healthy", "Degraded", "Unhealthy", "Stale", "Unknown"];
 
     private string _selectedStatusFilter = "All";
@@ -156,6 +177,7 @@ public class NetworkHealthDashboardViewModel : ViewModelBase
 
         RefreshCommand = new RelayCommand(_ => _ = RefreshAsync());
         AnalyzeWithAiCommand = new RelayCommand(_ => AnalyzeWithAi(), _ => SelectedDevice is not null);
+        TestNotificationCommand = new RelayCommand(_ => _ = TestNotificationAsync());
     }
 
     public Task InitializeAsync() => RefreshAsync();
@@ -255,6 +277,7 @@ public class NetworkHealthDashboardViewModel : ViewModelBase
             }
 
             await LoadAvailabilityAsync();
+            await LoadNotificationsAsync();
 
             StatusMessage = string.Empty;
         }
@@ -295,5 +318,60 @@ public class NetworkHealthDashboardViewModel : ViewModelBase
             $"Analyze the current health of {SelectedDevice.Name} using available monitoring evidence.";
 
         NavigateToCopilotRequested?.Invoke();
+    }
+
+    private async Task LoadNotificationsAsync()
+    {
+        try
+        {
+            NotificationChannels.Clear();
+            foreach (var channel in NotificationComposition.Service.GetAvailableChannels())
+            {
+                var state = channel.IsAvailable && channel.IsConfigured
+                    ? "Available"
+                    : channel.IsAvailable ? "Not configured" : "Unavailable";
+                NotificationChannels.Add($"{channel.Name} — {state}");
+            }
+
+            var store = PersistenceComposition.NotificationStore;
+            if (store is null)
+                return;
+
+            var history = await store.GetHistoryAsync(null, null, null, null, null, 20, 0);
+
+            Notifications.Clear();
+            foreach (var notification in history)
+            {
+                Notifications.Add(new DashboardNotificationRow
+                {
+                    Time = notification.CreatedAt.ToLocalTime().ToString("HH:mm:ss"),
+                    Alert = notification.AlertId,
+                    Channel = notification.Channel,
+                    Event = notification.EventType.ToString(),
+                    Status = notification.Status.ToString(),
+                    Attempts = notification.AttemptCount.ToString(),
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warn("Failed to load notification history.", ex);
+        }
+    }
+
+    private async Task TestNotificationAsync()
+    {
+        try
+        {
+            var result = await NotificationComposition.SendTestAsync();
+            NotificationStatus = result is { Status: NotificationStatus.Sent }
+                ? "Test notification sent."
+                : $"Test notification: {result?.Status}";
+        }
+        catch (Exception ex)
+        {
+            NotificationStatus = "Test notification failed.";
+            Log.Warn("Failed to send test notification.", ex);
+        }
     }
 }

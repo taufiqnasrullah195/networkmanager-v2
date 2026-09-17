@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using log4net;
 using NETworkManager.AI.Abstractions;
 using NETworkManager.AI.Alerts;
+using NETworkManager.AI.Notifications;
 using NETworkManager.AI.Persistence;
 
 namespace NETworkManager;
@@ -28,6 +29,7 @@ public static class PersistenceComposition
     private static SqliteHistoryRepository? _history;
     private static SqliteRetentionService? _retention;
     private static SqliteSnmpTelemetryRepository? _snmpRepository;
+    private static SqliteNotificationStore? _notificationStore;
     private static string? _error;
 
     public static IMonitoringStateStore? MonitoringStateStore => _monitoringStore;
@@ -40,6 +42,9 @@ public static class PersistenceComposition
 
     /// <summary>SNMP telemetry history repository (Step 13); null when persistence is unavailable.</summary>
     public static ISnmpTelemetryRepository? SnmpTelemetryRepository => _snmpRepository;
+
+    /// <summary>Notification delivery history store (Step 15); null when persistence is unavailable.</summary>
+    public static INotificationStore? NotificationStore => _notificationStore;
 
     /// <summary>Human-readable error when initialization failed, else null.</summary>
     public static string? InitializationError => _error;
@@ -75,6 +80,7 @@ public static class PersistenceComposition
             _history = new SqliteHistoryRepository(database);
             _retention = new SqliteRetentionService(database);
             _snmpRepository = new SqliteSnmpTelemetryRepository(database);
+            _notificationStore = new SqliteNotificationStore(database);
             _error = null;
         }
         catch (Exception ex)

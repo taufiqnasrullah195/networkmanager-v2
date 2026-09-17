@@ -7,6 +7,7 @@ using NETworkManager.AI.Conversation;
 using NETworkManager.AI.Diagnostics;
 using NETworkManager.AI.Execution;
 using NETworkManager.AI.Monitoring;
+using NETworkManager.AI.Notifications;
 using NETworkManager.AI.Orchestration;
 using NETworkManager.AI.Persistence;
 using NETworkManager.AI.Providers;
@@ -72,6 +73,12 @@ public static class AICopilotFactory
         {
             registry.Register(new DeviceTelemetryTool(snmpRepository));
             registry.Register(new InterfaceTelemetryTool(snmpRepository));
+        }
+
+        // Expose the Step 15 notification history to the copilot as a read-only tool (when persistence is available).
+        if (PersistenceComposition.NotificationStore is { } notificationStore)
+        {
+            registry.Register(new NotificationHistoryTool(notificationStore));
         }
 
         var orchestrator = new ToolCallOrchestrator(registry, execution, logger: notifier);

@@ -16,7 +16,7 @@ public static class PersistenceClock
 /// </summary>
 public sealed class SqliteDatabase
 {
-    public const int CurrentSchemaVersion = 2;
+    public const int CurrentSchemaVersion = 3;
 
     private const string SchemaV1 = """
         CREATE TABLE IF NOT EXISTS monitoring_results (
@@ -118,6 +118,24 @@ public sealed class SqliteDatabase
         CREATE INDEX IF NOT EXISTS ix_snmp_interface_time ON snmp_interface_telemetry(device_id, interface_index, timestamp_ms);
         """;
 
+    // Notification delivery history (Step 15). No secrets anywhere.
+    private const string SchemaV3 = """
+        CREATE TABLE IF NOT EXISTS notifications (
+            notification_id TEXT PRIMARY KEY,
+            alert_id TEXT NOT NULL,
+            channel TEXT NOT NULL,
+            status INTEGER NOT NULL,
+            event_type INTEGER NOT NULL,
+            idempotency_key TEXT NOT NULL,
+            created_at_ms INTEGER NOT NULL,
+            sent_at_ms INTEGER,
+            attempt_count INTEGER NOT NULL,
+            failure_reason TEXT
+        );
+        CREATE INDEX IF NOT EXISTS ix_notifications_alert_time ON notifications(alert_id, created_at_ms);
+        CREATE INDEX IF NOT EXISTS ix_notifications_idempotency ON notifications(idempotency_key, status);
+        """;
+
     private readonly string _connectionString;
     private readonly string _path;
 
@@ -153,6 +171,7 @@ public sealed class SqliteDatabase
         {
             Execute(connection, SchemaV1);
             Execute(connection, SchemaV2);
+            Execute(connection, SchemaV3);
             WriteUserVersion(connection, CurrentSchemaVersion);
         }
         else if (version < CurrentSchemaVersion)
@@ -172,6 +191,10 @@ public sealed class SqliteDatabase
         // v1 → v2: add the SNMP telemetry history tables.
         if (fromVersion < 2)
             Execute(connection, SchemaV2);
+
+        // v2 → v3: add the notification delivery history table.
+        if (fromVersion < 3)
+            Execute(connection, SchemaV3);
 
         WriteUserVersion(connection, CurrentSchemaVersion);
     }
