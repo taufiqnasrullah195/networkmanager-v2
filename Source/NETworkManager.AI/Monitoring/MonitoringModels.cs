@@ -29,6 +29,19 @@ public sealed record MonitoringTarget
     public string DisplayName => string.IsNullOrWhiteSpace(Name)
         ? (Address ?? Id)
         : Name;
+
+    public IReadOnlyList<string> Validate()
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(Id))
+            errors.Add("Target identifier is required.");
+
+        if (string.IsNullOrWhiteSpace(Address))
+            errors.Add("Target must have a hostname or IP address.");
+
+        return errors;
+    }
 }
 
 /// <summary>
@@ -56,6 +69,28 @@ public sealed record MonitoringCheck
 
     /// <summary>Extension metadata (future SNMP/HTTP checks) — kept opaque and secret-free.</summary>
     public IReadOnlyDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>();
+
+    public IReadOnlyList<string> Validate()
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(CheckId))
+            errors.Add("Check identifier is required.");
+
+        if (string.IsNullOrWhiteSpace(TargetId))
+            errors.Add("Check must reference a target.");
+
+        if (Type == MonitorCheckType.TcpConnectivity && Port is < 1 or > 65535)
+            errors.Add("TCP port must be between 1 and 65535.");
+
+        if (Timeout is { } timeout && (timeout < TimeSpan.FromMilliseconds(100) || timeout > TimeSpan.FromMinutes(10)))
+            errors.Add("Check timeout must be between 100 ms and 10 minutes.");
+
+        if (Interval is { } interval && (interval < TimeSpan.FromSeconds(1) || interval > TimeSpan.FromHours(24)))
+            errors.Add("Check interval must be between 1 second and 24 hours.");
+
+        return errors;
+    }
 }
 
 /// <summary>Structured evidence of one observation — identifies its source so it cannot be invented downstream.</summary>

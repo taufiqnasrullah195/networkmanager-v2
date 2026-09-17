@@ -15,7 +15,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Header -->
+        <!-- Global controls + status -->
         <Grid Grid.Row="0" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
@@ -23,55 +23,237 @@
             </Grid.ColumnDefinitions>
             <StackPanel>
                 <TextBlock Text="Network Monitoring" Style="{StaticResource HeaderTextBlock}" />
-                <TextBlock Text="Read-only health of monitored network targets"
-                           Style="{DynamicResource DefaultTextBlock}" Opacity="0.7" Margin="0,2,0,0" />
+                <TextBlock Text="Manage monitoring profiles and targets" Style="{DynamicResource DefaultTextBlock}" Opacity="0.7" Margin="0,2,0,0" />
             </StackPanel>
-            <Button Grid.Column="1" Content="Refresh" Command="{Binding RefreshCommand}" VerticalAlignment="Top" />
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Top">
+                <Button Content="Start Monitoring" Command="{Binding StartMonitoringCommand}" Margin="0,0,6,0" />
+                <Button Content="Stop Monitoring" Command="{Binding StopMonitoringCommand}" />
+            </StackPanel>
         </Grid>
 
-        <!-- Column headers -->
-        <Grid Grid.Row="1" Margin="0,0,0,4">
+        <!-- Status line -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,8">
+            <TextBlock Text="Monitoring:" Style="{DynamicResource DefaultTextBlock}" FontWeight="Bold" />
+            <TextBlock Text="{Binding GlobalStatus}" Margin="6,0,0,0" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
+            <TextBlock Text="  ·  " Style="{DynamicResource DefaultTextBlock}" Opacity="0.6" />
+            <TextBlock Text="{Binding ActiveTargets, StringFormat=Active: {0}}" Style="{DynamicResource DefaultTextBlock}" />
+            <TextBlock Text="  ·  " Style="{DynamicResource DefaultTextBlock}" Opacity="0.6" />
+            <TextBlock Text="{Binding HealthyCount, StringFormat=Healthy: {0}}" Style="{DynamicResource DefaultTextBlock}" />
+            <TextBlock Text="  ·  " Style="{DynamicResource DefaultTextBlock}" Opacity="0.6" />
+            <TextBlock Text="{Binding DegradedCount, StringFormat=Degraded: {0}}" Style="{DynamicResource DefaultTextBlock}" />
+            <TextBlock Text="  ·  " Style="{DynamicResource DefaultTextBlock}" Opacity="0.6" />
+            <TextBlock Text="{Binding UnhealthyCount, StringFormat=Unhealthy: {0}}" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
+        </StackPanel>
+
+        <!-- Profiles (left) + editor (right) -->
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="180" />
-                <ColumnDefinition Width="110" />
-                <ColumnDefinition Width="90" />
-                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="250" />
+                <ColumnDefinition Width="12" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column="0" Text="Target" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
-            <TextBlock Grid.Column="1" Text="Status" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
-            <TextBlock Grid.Column="2" Text="Last Check" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
-            <TextBlock Grid.Column="3" Text="Observed" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
-            <TextBlock Grid.Column="4" Text="Last Error" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
-        </Grid>
 
-        <!-- Rows -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding Rows}">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type viewModels:MonitoringRowViewModel}">
-                        <Grid Margin="0,0,0,6">
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Profiles" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,0,4" />
+                <ListBox Grid.Row="1" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile, Mode=TwoWay}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type viewModels:MonitoringProfileListItemViewModel}">
+                            <StackPanel Margin="2">
+                                <TextBlock Text="{Binding Name}" Style="{DynamicResource DefaultTextBlock}" FontWeight="Bold" />
+                                <TextBlock Text="{Binding Enabled, StringFormat=Enabled: {0}}" Style="{DynamicResource DefaultTextBlock}" Opacity="0.7" />
+                                <TextBlock Style="{DynamicResource DefaultTextBlock}" Opacity="0.6">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="{}{0} target(s), {1} check(s)">
+                                            <Binding Path="TargetCount" />
+                                            <Binding Path="CheckCount" />
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <WrapPanel Grid.Row="2" Margin="0,6,0,0">
+                    <Button Content="Add" Command="{Binding AddProfileCommand}" Margin="0,0,4,4" />
+                    <Button Content="Edit" Command="{Binding EditProfileCommand}" Margin="0,0,4,4" />
+                    <Button Content="Delete" Command="{Binding DeleteProfileCommand}" Margin="0,0,4,4" />
+                    <Button Content="Enable" Command="{Binding EnableProfileCommand}" Margin="0,0,4,4" />
+                    <Button Content="Disable" Command="{Binding DisableProfileCommand}" Margin="0,0,4,4" />
+                </WrapPanel>
+            </Grid>
+
+            <!-- Editor -->
+            <Border Grid.Column="2" BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.Gray7}" Padding="10">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Text="{Binding EditorTitle}" Style="{DynamicResource DefaultTextBlock}" FontWeight="Bold" Margin="0,0,0,8" />
+
+                    <Grid Grid.Row="1" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="10" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="180" />
-                                <ColumnDefinition Width="110" />
-                                <ColumnDefinition Width="90" />
+                                <ColumnDefinition Width="80" />
                                 <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="{Binding DisplayName}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" />
-                            <TextBlock Grid.Column="1" Text="{Binding Health}" TextWrapping="Wrap" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
-                            <TextBlock Grid.Column="2" Text="{Binding LastCheck}" Style="{DynamicResource DefaultTextBlock}" />
-                            <TextBlock Grid.Column="3" Text="{Binding Observed}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" Opacity="0.85" />
-                            <TextBlock Grid.Column="4" Text="{Binding LastError}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" Opacity="0.7" />
-                        </Grid>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-        </ScrollViewer>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-        <!-- Status / empty state -->
-        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Margin="0,8,0,0"
-                   Foreground="{DynamicResource MahApps.Brushes.Accent}"
-                   Style="{DynamicResource StatusMessageTextBlock}" />
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Name:" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,6,6" />
+                            <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Description:" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,6,6" />
+                            <TextBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Enabled:" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,6,6" />
+                            <CheckBox Grid.Row="2" Grid.Column="1" IsChecked="{Binding ProfileEnabled}" VerticalAlignment="Center" Margin="0,0,0,6" />
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Interval (s):" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,6,6" />
+                            <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding IntervalSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Timeout (s):" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,6,6" />
+                            <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding TimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,6" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="2" Text="Max concurrency:" Style="{DynamicResource DefaultTextBlock}" Margin="6,0,6,6" />
+                        </Grid>
+                        <TextBox Grid.Column="2" Text="{Binding MaxConcurrency, UpdateSourceTrigger=PropertyChanged}" Width="50" VerticalAlignment="Top" />
+                    </Grid>
+
+                    <!-- Targets -->
+                    <Grid Grid.Row="2" Margin="0,0,0,8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                            <Button DockPanel.Dock="Right" Content="Add Target" Command="{Binding AddTargetCommand}" />
+                            <TextBlock Text="Targets" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
+                        </DockPanel>
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Targets}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type viewModels:MonitoringTargetItemViewModel}">
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="120" />
+                                            <ColumnDefinition Width="140" />
+                                            <ColumnDefinition Width="110" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox Grid.Column="0" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Name" />
+                                        <TextBox Grid.Column="1" Text="{Binding Address, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Hostname/IP" />
+                                        <ComboBox Grid.Column="2" Margin="0,0,4,0" SelectedItem="{Binding Type, Mode=TwoWay}"
+                                                  ItemsSource="{Binding DataContext.TargetTypeOptions, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                        <TextBox Grid.Column="3" Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Description" />
+                                        <CheckBox Grid.Column="4" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        <Button Grid.Column="5" Content="✕" Command="{Binding DataContext.RemoveTargetCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}" Padding="6,0" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+
+                    <!-- Checks -->
+                    <Grid Grid.Row="3" Margin="0,0,0,8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                            <Button DockPanel.Dock="Right" Content="Add Check" Command="{Binding AddCheckCommand}" />
+                            <TextBlock Text="Checks" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
+                        </DockPanel>
+                        <ItemsControl Grid.Row="1" ItemsSource="{Binding Checks}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type viewModels:MonitoringCheckItemViewModel}">
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="130" />
+                                            <ColumnDefinition Width="130" />
+                                            <ColumnDefinition Width="60" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="70" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <ComboBox Grid.Column="0" Margin="0,0,4,0" SelectedItem="{Binding Type, Mode=TwoWay}"
+                                                  ItemsSource="{Binding DataContext.CheckTypeOptions, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                        <TextBox Grid.Column="1" Text="{Binding TargetId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Target id" />
+                                        <TextBox Grid.Column="2" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Port (TCP)" />
+                                        <TextBox Grid.Column="3" Text="{Binding TimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Timeout (s)" />
+                                        <TextBox Grid.Column="4" Text="{Binding IntervalSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Interval (s)" />
+                                        <CheckBox Grid.Column="5" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                        <Button Grid.Column="6" Content="✕" Command="{Binding DataContext.RemoveCheckCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                CommandParameter="{Binding}" Padding="6,0" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
+
+                    <!-- Runtime status -->
+                    <ScrollViewer Grid.Row="4" VerticalScrollBarVisibility="Auto" MaxHeight="160">
+                        <ItemsControl ItemsSource="{Binding Rows}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate DataType="{x:Type viewModels:MonitoringRowViewModel}">
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="150" />
+                                            <ColumnDefinition Width="90" />
+                                            <ColumnDefinition Width="80" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding DisplayName}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding Health}" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
+                                        <TextBlock Grid.Column="2" Text="{Binding LastCheck}" Style="{DynamicResource DefaultTextBlock}" />
+                                        <TextBlock Grid.Column="3" Text="{Binding Observed}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" Opacity="0.85" />
+                                        <TextBlock Grid.Column="4" Text="{Binding LastError}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" Opacity="0.7" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- Save / Cancel + message -->
+                    <Grid Grid.Row="5" Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Save" Command="{Binding SaveCommand}" Margin="0,0,6,0" MinWidth="80" />
+                        <Button Grid.Column="1" Content="Cancel" Command="{Binding CancelCommand}" MinWidth="80" />
+                        <TextBlock Grid.Column="2" Text="{Binding EditorMessage}" Margin="10,0,0,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource MahApps.Brushes.Accent}" VerticalAlignment="Center"
+                                   Style="{DynamicResource DefaultTextBlock}" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </UserControl>

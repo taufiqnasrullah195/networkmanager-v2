@@ -29,6 +29,15 @@ public interface IMonitoringEngine : IMonitoringQuery
     /// <summary>Removes a check (must be stopped or removed while not in the middle of a run — safe to call anytime).</summary>
     bool RemoveCheck(string checkId);
 
+    /// <summary>
+    ///     Removes all targets, checks, and recorded state. Safe to call while stopped (the configuration applier
+    ///     clears before re-applying a profile set).
+    /// </summary>
+    void Clear();
+
+    /// <summary>True while the periodic loop is running.</summary>
+    bool IsRunning { get; }
+
     /// <summary>Runs a single check immediately (outside the periodic loop) and records its result.</summary>
     Task<MonitoringResult> RunCheckAsync(MonitoringCheck check, CancellationToken cancellationToken = default);
 

@@ -39,6 +39,16 @@ public sealed class MonitoringEngine : IMonitoringEngine
         _scheduler = new MonitoringScheduler(executor, OnResult, _logger, _options.MaxConcurrency, _options.DefaultInterval);
     }
 
+    /// <summary>True while the periodic loop is running.</summary>
+    public bool IsRunning
+    {
+        get
+        {
+            lock (_gate)
+                return _started;
+        }
+    }
+
     // ----- lifecycle -------------------------------------------------------
 
     public Task StartAsync(CancellationToken cancellationToken = default)
@@ -161,6 +171,23 @@ public sealed class MonitoringEngine : IMonitoringEngine
         }
 
         return _scheduler.Remove(checkId);
+    }
+
+    public void Clear()
+    {
+        List<string> checkIds;
+
+        lock (_gate)
+        {
+            checkIds = _checks.Keys.ToList();
+            _checks.Clear();
+            _targets.Clear();
+        }
+
+        foreach (var checkId in checkIds)
+            _scheduler.Remove(checkId);
+
+        _store.Clear();
     }
 
     public async Task<MonitoringResult> RunCheckAsync(MonitoringCheck check, CancellationToken cancellationToken = default)

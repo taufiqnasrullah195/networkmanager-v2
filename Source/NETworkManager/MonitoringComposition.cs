@@ -25,17 +25,45 @@ public sealed class Log4netMonitoringLogger : IMonitoringLogger
 }
 
 /// <summary>
-///     Manual composition root for the monitoring engine (Step 9), mirroring <see cref="AICopilotFactory"/>.
-///     Builds the engine over the real read-only tool set, loads the externalized profile (targets/checks, no
-///     secrets) from the user's data directory, and exposes a shared <see cref="MonitoringEngine"/> so the WPF
-///     view and the AI copilot's <c>network_monitoring_status</c> tool read the same in-memory state.
+///     Manual composition root for monitoring (Step 9/10). Owns the configuration service (JSON repository, backward
+///     compatible with the Step 9 single-profile file) and the shared monitoring engine. Configuration is applied to
+///     the engine only while stopped, via <see cref="MonitoringConfigurationApplier"/> — the engine starts empty.
 /// </summary>
 public static class MonitoringComposition
 {
-    private static readonly Lazy<MonitoringEngine> EngineInstance = new(CreateEngine);
+    private const int DefaultMaxConcurrency = 5;
 
-    /// <summary>The shared monitoring engine (built lazily from the externalized profile).</summary>
-    public static MonitoringEngine Instance => EngineInstance.Value;
+    private static readonly Lazy<MonitoringProfileService> ProfileServiceInstance = new(CreateProfileService);
+
+    private static readonly object Gate = new();
+
+    private static MonitoringEngine? _engine;
+
+    private static int _maxConcurrency = DefaultMaxConcurrency;
+
+    /// <summary>The configuration service (profiles CRUD + validation). The UI edits configuration through this.</summary>
+    public static MonitoringProfileService ProfileService => ProfileServiceInstance.Value;
+
+    /// <summary>The shared monitoring engine (built lazily; empty until configuration is applied).</summary>
+    public static MonitoringEngine Instance
+    {
+        get
+        {
+            lock (Gate)
+                return _engine ??= CreateEngine(_maxConcurrency);
+        }
+    }
+
+    /// <summary>Rebuilds the engine with a new global concurrency cap (call while stopped; discards runtime state).</summary>
+    public static MonitoringEngine Rebuild(int maxConcurrency)
+    {
+        lock (Gate)
+        {
+            _maxConcurrency = maxConcurrency;
+            _engine = CreateEngine(maxConcurrency);
+            return _engine;
+        }
+    }
 
     private static string DataDirectory =>
         Path.Combine(
@@ -43,10 +71,17 @@ public static class MonitoringComposition
             "NETworkManager",
             "AI");
 
-    private static MonitoringEngine CreateEngine()
+    private static MonitoringProfileService CreateProfileService()
     {
-        // Sensible defaults (30s interval, 5s timeout, 5 concurrent checks). Targets come from the profile, never code.
-        var options = new MonitoringOptions();
+        var catalogPath = Path.Combine(DataDirectory, "monitoring-profiles.json");
+        var legacyPath = Path.Combine(DataDirectory, "monitoring-profile.json");
+
+        return new MonitoringProfileService(new JsonMonitoringProfileRepository(catalogPath, legacyPath));
+    }
+
+    private static MonitoringEngine CreateEngine(int maxConcurrency)
+    {
+        var options = new MonitoringOptions { MaxConcurrency = maxConcurrency };
 
         var registry = new ToolRegistry();
         NetworkToolCollection.RegisterAll(registry);
@@ -54,31 +89,6 @@ public static class MonitoringComposition
         var execution = new ToolExecutionService(registry);
         var executor = new MonitoringCheckExecutor(execution);
 
-        var engine = new MonitoringEngine(options, executor, logger: new Log4netMonitoringLogger());
-
-        var profileStore = new MonitoringProfileStore(Path.Combine(DataDirectory, "monitoring-profile.json"));
-
-        var profile = profileStore.Load() ?? new MonitoringProfile { Name = "Default" };
-
-        if (profile.Validate().Count != 0)
-            profile = new MonitoringProfile { Name = "Default" };
-
-        if (profile.Enabled)
-            LoadProfile(engine, profile);
-
-        return engine;
-    }
-
-    /// <summary>Materializes a profile into the engine (targets are registered before checks).</summary>
-    public static void LoadProfile(MonitoringEngine engine, MonitoringProfile profile)
-    {
-        ArgumentNullException.ThrowIfNull(engine);
-        ArgumentNullException.ThrowIfNull(profile);
-
-        foreach (var target in profile.Targets)
-            engine.AddTarget(target);
-
-        foreach (var check in profile.Checks)
-            engine.AddCheck(check);
+        return new MonitoringEngine(options, executor, logger: new Log4netMonitoringLogger());
     }
 }

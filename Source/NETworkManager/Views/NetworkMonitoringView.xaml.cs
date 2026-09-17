@@ -6,8 +6,9 @@ using NETworkManager.ViewModels;
 namespace NETworkManager.Views;
 
 /// <summary>
-///     Minimal monitoring surface. Shows target/status/last-check/observed/last-error; the engine lifecycle is view
-///     scoped in this step (start on load, graceful stop on unload). No business logic lives here.
+///     Monitoring management view: global start/stop, profile list + editor, and live runtime status. The view binds
+///     <see cref="NetworkMonitoringViewModel"/>; lifecycle is view-scoped (start/stop are explicit commands; the engine
+///     is stopped gracefully when the view unloads).
 /// </summary>
 public partial class NetworkMonitoringView
 {
@@ -17,7 +18,7 @@ public partial class NetworkMonitoringView
 
     public NetworkMonitoringView()
     {
-        _viewModel = new NetworkMonitoringViewModel(MonitoringComposition.Instance);
+        _viewModel = new NetworkMonitoringViewModel(MonitoringComposition.ProfileService);
 
         InitializeComponent();
         DataContext = _viewModel;
@@ -25,25 +26,18 @@ public partial class NetworkMonitoringView
 
     private async void NetworkMonitoringView_OnLoaded(object sender, RoutedEventArgs e)
     {
-        try
-        {
-            await MonitoringComposition.Instance.StartAsync().ConfigureAwait(true);
-        }
-        catch (Exception ex)
-        {
-            Log.Error("Failed to start network monitoring.", ex);
-        }
+        await _viewModel.InitializeAsync();
     }
 
     private async void NetworkMonitoringView_OnUnloaded(object sender, RoutedEventArgs e)
     {
         try
         {
-            await MonitoringComposition.Instance.StopAsync().ConfigureAwait(true);
+            await MonitoringComposition.Instance.StopAsync();
         }
         catch (Exception ex)
         {
-            Log.Error("Failed to stop network monitoring.", ex);
+            Log.Error("Failed to stop network monitoring on unload.", ex);
         }
     }
 }
