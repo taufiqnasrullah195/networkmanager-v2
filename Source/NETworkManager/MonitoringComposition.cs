@@ -81,6 +81,8 @@ public static class MonitoringComposition
 
     private static MonitoringEngine CreateEngine(int maxConcurrency)
     {
+        PersistenceComposition.InitializeAsync().GetAwaiter().GetResult();
+
         var options = new MonitoringOptions { MaxConcurrency = maxConcurrency };
 
         var registry = new ToolRegistry();
@@ -89,6 +91,6 @@ public static class MonitoringComposition
         var execution = new ToolExecutionService(registry);
         var executor = new MonitoringCheckExecutor(execution);
 
-        return new MonitoringEngine(options, executor, logger: new Log4netMonitoringLogger());
+        return new MonitoringEngine(options, executor, store: PersistenceComposition.MonitoringStateStore, logger: new Log4netMonitoringLogger());
     }
 }

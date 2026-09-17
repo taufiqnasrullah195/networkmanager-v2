@@ -8,6 +8,7 @@ using NETworkManager.AI.Diagnostics;
 using NETworkManager.AI.Execution;
 using NETworkManager.AI.Monitoring;
 using NETworkManager.AI.Orchestration;
+using NETworkManager.AI.Persistence;
 using NETworkManager.AI.Providers;
 using NETworkManager.AI.Providers.Authentication;
 using NETworkManager.AI.Registry;
@@ -57,6 +58,13 @@ public static class AICopilotFactory
 
         // Expose the Step 11 alert state to the copilot as a read-only tool (no acknowledge/resolve path).
         registry.Register(new NetworkAlertsTool(AlertComposition.Alerts));
+
+        // Expose the Step 12 history to the copilot as read-only tools (when persistence is available).
+        if (PersistenceComposition.History is { } history)
+        {
+            registry.Register(new MonitoringHistoryTool(history));
+            registry.Register(new AlertHistoryTool(history));
+        }
 
         var orchestrator = new ToolCallOrchestrator(registry, execution, logger: notifier);
 

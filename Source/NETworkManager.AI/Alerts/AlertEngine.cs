@@ -151,7 +151,7 @@ public sealed class AlertEngine : IAlertEngine, IMonitoringObserver
             if (alert is null || alert.Status != AlertStatus.Open)
                 return false;
 
-            var updated = alert with { Status = AlertStatus.Acknowledged };
+            var updated = alert with { Status = AlertStatus.Acknowledged, AcknowledgedAt = DateTimeOffset.UtcNow };
 
             _store.UpdateAlert(updated);
             _logger.AlertAcknowledged(alertId);

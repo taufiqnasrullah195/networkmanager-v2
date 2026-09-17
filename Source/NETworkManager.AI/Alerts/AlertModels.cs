@@ -43,6 +43,8 @@ public sealed record Alert
 
     public string? FailureClassification { get; init; }
 
+    public DateTimeOffset? AcknowledgedAt { get; init; }
+
     public DateTimeOffset? ResolvedAt { get; init; }
 
     public string? ResolutionEvidence { get; init; }

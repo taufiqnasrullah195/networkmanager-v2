@@ -13,6 +13,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Global controls + status -->
@@ -307,6 +308,68 @@
                                 Margin="0,8,0,0" HorizontalAlignment="Left" />
                     </StackPanel>
                 </Border>
+            </Grid>
+        </Grid>
+
+        <!-- History -->
+        <Grid Grid.Row="4" Margin="0,10,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding LoadHistoryCommand}" />
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="History" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" />
+                    <TextBlock Text="{Binding HistoryNote}" Margin="10,0,0,0" Style="{DynamicResource DefaultTextBlock}" Opacity="0.8" VerticalAlignment="Center" />
+                </StackPanel>
+            </DockPanel>
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ListBox Grid.Column="0" ItemsSource="{Binding HistoryRows}" MaxHeight="120">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type viewModels:MonitoringHistoryRowViewModel}">
+                            <Grid Margin="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60" />
+                                    <ColumnDefinition Width="110" />
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="90" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Timestamp}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="1" Text="{Binding Target}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="2" Text="{Binding Check}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="3" Text="{Binding Status}" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="4" Text="{Binding Message}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" Opacity="0.8" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <ListBox Grid.Column="2" ItemsSource="{Binding AlertHistoryRows}" MaxHeight="120">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate DataType="{x:Type viewModels:AlertHistoryRowViewModel}">
+                            <Grid Margin="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="60" />
+                                    <ColumnDefinition Width="110" />
+                                    <ColumnDefinition Width="80" />
+                                    <ColumnDefinition Width="90" />
+                                    <ColumnDefinition Width="60" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Created}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="1" Text="{Binding Target}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="2" Text="{Binding Severity}" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="3" Text="{Binding Status}" Style="{DynamicResource DefaultTextBlock}" />
+                                <TextBlock Grid.Column="4" Text="{Binding Occurrences}" Style="{DynamicResource DefaultTextBlock}" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </Grid>
         </Grid>
     </Grid>

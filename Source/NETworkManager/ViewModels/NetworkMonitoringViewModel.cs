@@ -118,6 +118,27 @@ public sealed class AlertRowViewModel
     public string Classification { get; init; } = string.Empty;
 }
 
+/// <summary>Read-only display row for one persisted monitoring result.</summary>
+public sealed class MonitoringHistoryRowViewModel
+{
+    public string Timestamp { get; init; } = string.Empty;
+    public string Target { get; init; } = string.Empty;
+    public string Check { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string Message { get; init; } = string.Empty;
+}
+
+/// <summary>Read-only display row for one persisted alert.</summary>
+public sealed class AlertHistoryRowViewModel
+{
+    public string Created { get; init; } = string.Empty;
+    public string Target { get; init; } = string.Empty;
+    public string Severity { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
+    public string Occurrences { get; init; } = string.Empty;
+    public string LastSeen { get; init; } = string.Empty;
+}
+
 /// <summary>
 ///     Monitoring management view model: profile CRUD + editor draft + global start/stop + runtime status.
 ///     All configuration goes through <see cref="IMonitoringProfileService"/>; all runtime through the shared engine.
@@ -215,6 +236,15 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
     private string _alertCount = "0 active alerts";
     public string AlertCount { get => _alertCount; private set { _alertCount = value; OnPropertyChanged(); } }
 
+    public ObservableCollection<MonitoringHistoryRowViewModel> HistoryRows { get; } = [];
+
+    public ObservableCollection<AlertHistoryRowViewModel> AlertHistoryRows { get; } = [];
+
+    public ICommand LoadHistoryCommand { get; }
+
+    private string _historyNote = string.Empty;
+    public string HistoryNote { get => _historyNote; private set { _historyNote = value; OnPropertyChanged(); } }
+
     // ----- commands ---------------------------------------------------------
 
     public ICommand StartMonitoringCommand { get; }
@@ -253,6 +283,7 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
         AddCheckCommand = new RelayCommand(_ => AddCheck(), _ => IsEditing);
         RemoveCheckCommand = new RelayCommand(p => RemoveCheck((MonitoringCheckItemViewModel)p!), _ => IsEditing);
         AcknowledgeAlertCommand = new RelayCommand(_ => AcknowledgeSelectedAlert(), _ => SelectedAlert is { Status: "Open" });
+        LoadHistoryCommand = new RelayCommand(_ => _ = LoadHistoryAsync());
 
         MonitoringComposition.Instance.Subscribe(this);
         AlertComposition.Alerts.Subscribe(this);
@@ -284,6 +315,57 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
         }
 
         RefreshStatus();
+        await LoadHistoryAsync();
+    }
+
+    private async Task LoadHistoryAsync()
+    {
+        try
+        {
+            if (PersistenceComposition.History is null)
+            {
+                HistoryNote = PersistenceComposition.InitializationError ?? "History storage is unavailable.";
+                return;
+            }
+
+            var results = await PersistenceComposition.History.GetResultsAsync(null, null, null, 50, 0);
+
+            HistoryRows.Clear();
+            foreach (var r in results)
+            {
+                HistoryRows.Add(new MonitoringHistoryRowViewModel
+                {
+                    Timestamp = r.Timestamp.ToLocalTime().ToString("HH:mm:ss"),
+                    Target = r.TargetId,
+                    Check = r.CheckType.ToString(),
+                    Status = r.Status.ToString(),
+                    Message = r.SafeMessage ?? string.Empty,
+                });
+            }
+
+            var alerts = await PersistenceComposition.History.GetAlertHistoryAsync(null, null, null, 50, 0);
+
+            AlertHistoryRows.Clear();
+            foreach (var a in alerts)
+            {
+                AlertHistoryRows.Add(new AlertHistoryRowViewModel
+                {
+                    Created = a.FirstSeenAt.ToLocalTime().ToString("HH:mm:ss"),
+                    Target = a.TargetName ?? a.TargetId,
+                    Severity = a.Severity.ToString(),
+                    Status = a.Status.ToString(),
+                    Occurrences = a.OccurrenceCount.ToString(),
+                    LastSeen = a.LastSeenAt.ToLocalTime().ToString("HH:mm:ss"),
+                });
+            }
+
+            HistoryNote = $"{HistoryRows.Count} result(s), {AlertHistoryRows.Count} alert(s) in history.";
+        }
+        catch (Exception ex)
+        {
+            Log.Error("Failed to load monitoring history.", ex);
+            HistoryNote = "Unable to load monitoring history.";
+        }
     }
 
     public void OnMonitoringEvent(MonitoringEvent e)

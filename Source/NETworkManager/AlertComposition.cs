@@ -28,6 +28,9 @@ public static class AlertComposition
 
     public static AlertEngine Alerts => AlertsInstance.Value;
 
-    private static AlertEngine CreateAlerts() =>
-        new(logger: new Log4netAlertLogger());
+    private static AlertEngine CreateAlerts()
+    {
+        PersistenceComposition.InitializeAsync().GetAwaiter().GetResult();
+        return new AlertEngine(store: PersistenceComposition.AlertStore, logger: new Log4netAlertLogger());
+    }
 }
