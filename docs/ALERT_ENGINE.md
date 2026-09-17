@@ -113,6 +113,13 @@ never an automatic alert. See `docs/SNMP_TELEMETRY.md`.
 The Network Health Dashboard (Step 14, `docs/NETWORK_HEALTH_DASHBOARD.md`) surfaces active alerts read-only; clicking
 an alert reuses this step's alert detail UI.
 
+## Notification engine (Step 15)
+
+`docs/NOTIFICATION_ENGINE.md` documents the decoupled notification layer: `NotificationEngine` consumes this step's
+`AlertEvent`s (created/resolved) and routes them through a policy (severity/event filters, channel routing), cooldown,
+deterministic escalation, and bounded retry/idempotency to optional `INotificationChannel`s. ALERT ≠ NOTIFICATION; a
+FAILED delivery never resolves an alert.
+
 ## Limitations
 
 - `ProfileId`/`ProfileName` are unpopulated (the monitoring engine doesn't propagate per-target profile identity).

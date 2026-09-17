@@ -110,6 +110,9 @@ here with a contextual prompt (e.g. "Analyze the current health of Gateway using
 `AiCopilotHandoff.PendingPrompt`. AI remains behind the tool orchestrator + policy; the dashboard has no direct AI
 access.
 
+The notification engine (Step 15, `docs/NOTIFICATION_ENGINE.md`) exposes notification delivery history read-only via
+`network_notification_history`; the AI cannot send/disable/configure notifications or modify rules.
+
 The copilot goes through `ToolCallOrchestrator` like everyone else: MEDIUM/HIGH → `ApprovalRequired` (nothing
 executes), CRITICAL → `PolicyDenied`. There is **no approval bypass path**; the interactive approval dialog is a
 future step — until then, medium/high tools simply don't run from the copilot (tested).

@@ -412,6 +412,10 @@ STEP 12 (see `docs/PERSISTENT_STATE.md`) adds SQLite persistence behind the exis
 
 STEP 14 (see `docs/NETWORK_HEALTH_DASHBOARD.md`) adds a presentation-only dashboard: `DashboardAggregator` (cross-platform) aggregates `IMonitoringQuery`/`IAlertQuery`/history repos/`ISnmpTelemetryRepository` into a `DashboardSnapshot` (health summary, device table, active alerts, recent events, interface health/issues, latency, availability). `NetworkHealthDashboardView`/`ViewModel` present it; "Analyze with AI" hands off to the copilot through the existing orchestrator.
 
+### 9.10 Notification engine (implemented)
+
+STEP 15 (see `docs/NOTIFICATION_ENGINE.md`) adds a decoupled notification subsystem: `NotificationEngine` (policy + cooldown + escalation + idempotency), `NotificationService` (bounded retry), `INotificationChannel` (Desktop), SQLite notification history (schema v3), and a read-only `network_notification_history` AI tool. ALERT ≠ NOTIFICATION; a failed delivery never resolves an alert.
+
 ---
 
 ## 10. Agent execution boundary (Planned)

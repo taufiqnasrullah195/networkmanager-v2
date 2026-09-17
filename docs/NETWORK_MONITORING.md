@@ -192,6 +192,11 @@ SNMP is strictly read-only — no SET, no configuration changes, no remediation.
 `docs/NETWORK_HEALTH_DASHBOARD.md` documents the presentation-only dashboard that aggregates this monitoring state
 (plus alerts, history, and SNMP telemetry) into a single operational view.
 
+## Notification engine (Step 15)
+
+`docs/NOTIFICATION_ENGINE.md` documents the notification layer that reacts to alert events produced from this
+monitoring state — notifications are delivery attempts, never monitoring evidence.
+
 ## Limitations
 
 - SNMP/HTTP monitoring, persistent history, analytics, alerting, and dashboards are **out of scope** (next
