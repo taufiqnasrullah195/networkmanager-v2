@@ -135,6 +135,9 @@ public static class ApplicationManager
             case ApplicationName.NetworkMonitoring:
                 canvas.Children.Add(new PackIconMaterial { Kind = PackIconMaterialKind.HeartPulse });
                 break;
+            case ApplicationName.NetworkHealthDashboard:
+                canvas.Children.Add(new PackIconMaterial { Kind = PackIconMaterialKind.MonitorDashboard });
+                break;
             case ApplicationName.None:
             case ApplicationName.AWSSessionManager:
             default:

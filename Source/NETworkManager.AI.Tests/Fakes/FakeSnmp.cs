@@ -115,6 +115,10 @@ public sealed class FakeSnmpTelemetryRepository : ISnmpTelemetryRepository
 
     public IReadOnlyList<InterfaceTelemetry> LatestInterfaces { get; set; } = Array.Empty<InterfaceTelemetry>();
 
+    public IReadOnlyList<InterfaceTelemetry> AllLatestInterfaces { get; set; } = Array.Empty<InterfaceTelemetry>();
+
+    public IReadOnlyList<InterfaceTelemetry> InterfaceHistory { get; set; } = Array.Empty<InterfaceTelemetry>();
+
     public List<SnmpCollectionResult> Recorded { get; } = [];
 
     public Task RecordAsync(SnmpCollectionResult collection, CancellationToken cancellationToken = default)
@@ -130,7 +134,11 @@ public sealed class FakeSnmpTelemetryRepository : ISnmpTelemetryRepository
         CancellationToken cancellationToken = default) =>
         Task.FromResult(LatestInterfaces);
 
+    public Task<IReadOnlyList<InterfaceTelemetry>> GetAllLatestInterfaceTelemetryAsync(int limit,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<InterfaceTelemetry>>(AllLatestInterfaces.Take(limit).ToList());
+
     public Task<IReadOnlyList<InterfaceTelemetry>> GetInterfaceTelemetryHistoryAsync(string deviceId, int interfaceIndex,
         DateTimeOffset? start, DateTimeOffset? end, int limit, int offset, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<InterfaceTelemetry>>(Array.Empty<InterfaceTelemetry>());
+        Task.FromResult<IReadOnlyList<InterfaceTelemetry>>(InterfaceHistory.Skip(offset).Take(limit).ToList());
 }

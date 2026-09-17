@@ -679,6 +679,7 @@ public sealed partial class MainWindow : INotifyPropertyChanged
     private DNSLookupHostView _dnsLookupHostView;
     private AICopilotView _aiCopilotView;
     private NetworkMonitoringView _networkMonitoringView;
+    private NetworkHealthDashboardView _networkHealthDashboardView;
     private RemoteDesktopHostView _remoteDesktopHostView;
     private PowerShellHostView _powerShellHostView;
     private PuTTYHostView _puttyHostView;
@@ -698,6 +699,18 @@ public sealed partial class MainWindow : INotifyPropertyChanged
     private ConnectionsView _connectionsView;
     private ListenersView _listenersView;
     private NeighborTableView _neighborTableView;
+
+    /// <summary>Programmatically navigates the main window to an application (used by the dashboard's AI handoff).</summary>
+    public static void NavigateToApplication(ApplicationName name)
+    {
+        if (System.Windows.Application.Current.MainWindow is not MainWindow mainWindow)
+            return;
+
+        var application = mainWindow.Applications.Cast<ApplicationInfo>().FirstOrDefault(x => x.Name == name);
+
+        if (application != null)
+            mainWindow.SelectedApplication = application;
+    }
 
     /// <summary>
     ///     Method when the application view becomes visible (again). Either when switching the applications
@@ -853,6 +866,11 @@ public sealed partial class MainWindow : INotifyPropertyChanged
                 _networkMonitoringView ??= new NetworkMonitoringView();
 
                 ContentControlApplication.Content = _networkMonitoringView;
+                break;
+            case ApplicationName.NetworkHealthDashboard:
+                _networkHealthDashboardView ??= new NetworkHealthDashboardView();
+
+                ContentControlApplication.Content = _networkHealthDashboardView;
                 break;
             case ApplicationName.DiscoveryProtocol:
                 if (_discoveryProtocolView == null)

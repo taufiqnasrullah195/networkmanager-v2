@@ -113,6 +113,11 @@ public enum ApplicationName
     NetworkMonitoring,
 
     /// <summary>
+    ///     Network health dashboard application (TheWiseNetwork extension, Step 14).
+    /// </summary>
+    NetworkHealthDashboard,
+
+    /// <summary>
     ///     Discovery protocol application.
     /// </summary>
     DiscoveryProtocol,

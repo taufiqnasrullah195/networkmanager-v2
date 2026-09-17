@@ -131,6 +131,31 @@ public sealed class SqliteSnmpTelemetryRepository : ISnmpTelemetryRepository
         return results;
     }
 
+    public async Task<IReadOnlyList<InterfaceTelemetry>> GetAllLatestInterfaceTelemetryAsync(int limit,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = _db.Open();
+        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+
+        using var command = connection.CreateCommand();
+        command.CommandText =
+            """
+            SELECT device_id, interface_index, interface_name, admin_status, oper_status, speed,
+                   in_octets, out_octets, in_errors, out_errors, in_discards, out_discards, uses_hc, timestamp_ms
+            FROM snmp_interface_telemetry
+            WHERE id IN (SELECT MAX(id) FROM snmp_interface_telemetry GROUP BY device_id, interface_index)
+            ORDER BY device_id, interface_index LIMIT $limit;
+            """;
+        command.Parameters.AddWithValue("$limit", limit);
+
+        var results = new List<InterfaceTelemetry>();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+            results.Add(ReadInterface(reader));
+
+        return results;
+    }
+
     public async Task<IReadOnlyList<InterfaceTelemetry>> GetInterfaceTelemetryHistoryAsync(string deviceId,
         int interfaceIndex, DateTimeOffset? start, DateTimeOffset? end, int limit, int offset,
         CancellationToken cancellationToken = default)

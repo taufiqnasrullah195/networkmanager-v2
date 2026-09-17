@@ -15,9 +15,12 @@ public partial class AICopilotView
         var session = AICopilotFactory.CreateSession();
         _viewModel = new AICopilotViewModel(session.Controller);
         _viewModel.SetProviderInfo(session.ProviderInfo);
+        _viewModel.ApplyPendingPrompt();
 
         InitializeComponent();
         DataContext = _viewModel;
+
+        Loaded += (_, _) => _viewModel.ApplyPendingPrompt();
     }
 
     private void Input_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)

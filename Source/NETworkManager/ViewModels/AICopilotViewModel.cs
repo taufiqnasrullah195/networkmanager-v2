@@ -216,6 +216,16 @@ public class AICopilotViewModel : ViewModelBase
         ProviderInfo = string.IsNullOrWhiteSpace(providerInfo) ? "Provider: Not configured" : providerInfo;
     }
 
+    /// <summary>Picks up a pending dashboard handoff prompt (contextual "Analyze with AI") and clears it.</summary>
+    public void ApplyPendingPrompt()
+    {
+        if (string.IsNullOrWhiteSpace(AiCopilotHandoff.PendingPrompt))
+            return;
+
+        Input = AiCopilotHandoff.PendingPrompt;
+        AiCopilotHandoff.PendingPrompt = null;
+    }
+
     private async Task SendAsync()
     {
         if (IsBusy || string.IsNullOrWhiteSpace(Input))

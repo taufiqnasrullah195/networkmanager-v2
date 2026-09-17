@@ -18,6 +18,10 @@ public interface ISnmpTelemetryRepository
     Task<IReadOnlyList<InterfaceTelemetry>> GetLatestInterfaceTelemetryAsync(string deviceId, int limit,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Returns the latest interface telemetry rows across ALL devices (one per device+interface index).</summary>
+    Task<IReadOnlyList<InterfaceTelemetry>> GetAllLatestInterfaceTelemetryAsync(int limit,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Bounded interface counter history (for rate calculation and trends).</summary>
     Task<IReadOnlyList<InterfaceTelemetry>> GetInterfaceTelemetryHistoryAsync(string deviceId, int interfaceIndex,
         DateTimeOffset? start, DateTimeOffset? end, int limit, int offset, CancellationToken cancellationToken = default);
