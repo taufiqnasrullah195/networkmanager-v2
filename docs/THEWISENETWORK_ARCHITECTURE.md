@@ -406,7 +406,7 @@ STEP 12 (see `docs/PERSISTENT_STATE.md`) adds SQLite persistence behind the exis
 - `SqliteMonitoringStateStore` + `SqliteAlertStore` (in-memory cache + SQLite history; active alerts restored on startup; in-memory fallback if the DB is unavailable).
 - `SqliteHistoryRepository` (bounded/paginated/parameterized queries) + `SqliteRetentionService` (configurable retention, preserves active alerts).
 - `network_monitoring_history` + `network_alert_history` read-only AI tools; a minimal History panel in `NetworkMonitoringView`.
-- Configuration (profiles/targets/checks) stays in its JSON store — current state vs historical evidence remain separate layers.
+- SNMP telemetry (Step 13) integrates as a monitoring check: an `SnmpTelemetry` result (timeout → monitoring failure; interface status/counters → evidence) flows through the same `HealthEvaluator`/`AlertEngine` path. See `docs/SNMP_TELEMETRY.md`.
 
 ---
 

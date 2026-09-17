@@ -179,6 +179,14 @@ The in-memory stores are replaced by persistent SQLite-backed stores (see `docs/
 - Two read-only AI tools (`network_monitoring_history`, `network_alert_history`) expose historical evidence; a
   minimal WPF History panel in `NetworkMonitoringView` shows recent results + alert history.
 
+## SNMP telemetry (Step 13)
+
+`docs/SNMP_TELEMETRY.md` documents the read-only SNMP subsystem: a `MonitorCheckType.SnmpTelemetry` check (with
+`SnmpCheckConfig`: version, port, credential reference, collection mode), the `ISnmpTelemetryCollector` /
+`ISnmpProvider` (Lextm.SharpSnmpLib) / `ISnmpNormalizer` pipeline, `DeviceTelemetry`/`InterfaceTelemetry` models,
+the counter-safe `IInterfaceRateCalculator`, SQLite telemetry history (schema v2), and two read-only AI tools.
+SNMP is strictly read-only — no SET, no configuration changes, no remediation.
+
 ## Limitations
 
 - SNMP/HTTP monitoring, persistent history, analytics, alerting, and dashboards are **out of scope** (next

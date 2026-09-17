@@ -106,6 +106,10 @@ Alerts contain no credentials; `Title`/`Description`/`Reason`/`Evidence` are bui
 fields (asserted by tests). Logging takes ids/severity only. No remediation, no shell, no network writes, no AI
 calls from the engine.
 
+SNMP (Step 13) integrates through the same path: an `SnmpTelemetry` check that fails (timeout) or degrades produces
+a monitoring result whose `CheckType` feeds the alert fingerprint — but SNMP interface status/counters are evidence,
+never an automatic alert. See `docs/SNMP_TELEMETRY.md`.
+
 ## Limitations
 
 - `ProfileId`/`ProfileName` are unpopulated (the monitoring engine doesn't propagate per-target profile identity).
