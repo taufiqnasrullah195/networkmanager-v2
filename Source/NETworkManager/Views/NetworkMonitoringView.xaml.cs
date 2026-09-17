@@ -17,7 +17,7 @@ public partial class NetworkMonitoringView
 
     public NetworkMonitoringView()
     {
-        _viewModel = new NetworkMonitoringViewModel(MonitoringComposition.Instance.Engine);
+        _viewModel = new NetworkMonitoringViewModel(MonitoringComposition.Instance);
 
         InitializeComponent();
         DataContext = _viewModel;
@@ -27,7 +27,7 @@ public partial class NetworkMonitoringView
     {
         try
         {
-            await MonitoringComposition.Instance.Engine.StartAsync().ConfigureAwait(true);
+            await MonitoringComposition.Instance.StartAsync().ConfigureAwait(true);
         }
         catch (Exception ex)
         {
@@ -39,7 +39,7 @@ public partial class NetworkMonitoringView
     {
         try
         {
-            await MonitoringComposition.Instance.Engine.StopAsync().ConfigureAwait(true);
+            await MonitoringComposition.Instance.StopAsync().ConfigureAwait(true);
         }
         catch (Exception ex)
         {

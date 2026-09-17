@@ -52,7 +52,7 @@ public static class AICopilotFactory
         registry.Register(new InternetConnectivityDiagnosticTool(diagnostics));
 
         // Expose the Step 9 monitoring state to the copilot as a read-only tool (no mutation path).
-        registry.Register(new MonitoringStatusTool(MonitoringComposition.Instance.Engine));
+        registry.Register(new MonitoringStatusTool(MonitoringComposition.Instance));
 
         var orchestrator = new ToolCallOrchestrator(registry, execution, logger: notifier);
 

@@ -34,7 +34,8 @@ public static class MonitoringComposition
 {
     private static readonly Lazy<MonitoringEngine> EngineInstance = new(CreateEngine);
 
-    public static MonitoringEngine Engine => EngineInstance.Value;
+    /// <summary>The shared monitoring engine (built lazily from the externalized profile).</summary>
+    public static MonitoringEngine Instance => EngineInstance.Value;
 
     private static string DataDirectory =>
         Path.Combine(
