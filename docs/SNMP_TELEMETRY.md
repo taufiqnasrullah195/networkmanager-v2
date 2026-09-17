@@ -131,6 +131,11 @@ identifiers must be labeled as evidence (not authoritative over LLDP/CDP).
 - Standard vs vendor-specific OIDs are kept separate: only MIB-II / IF-MIB are implemented; no generic CPU/memory
   OIDs are fabricated (those are vendor-specific and out of scope).
 
+## Network Health Dashboard (Step 14)
+
+The dashboard (`docs/NETWORK_HEALTH_DASHBOARD.md`) aggregates SNMP interface telemetry (health counts, top issues) via
+`ISnmpTelemetryRepository.GetAllLatestInterfaceTelemetryAsync` — read-only, secret-free.
+
 ## Limitations
 
 - No SNMP SET, configuration backup, or remediation (out of scope by design).

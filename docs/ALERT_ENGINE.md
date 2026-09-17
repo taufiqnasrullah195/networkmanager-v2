@@ -110,6 +110,9 @@ SNMP (Step 13) integrates through the same path: an `SnmpTelemetry` check that f
 a monitoring result whose `CheckType` feeds the alert fingerprint — but SNMP interface status/counters are evidence,
 never an automatic alert. See `docs/SNMP_TELEMETRY.md`.
 
+The Network Health Dashboard (Step 14, `docs/NETWORK_HEALTH_DASHBOARD.md`) surfaces active alerts read-only; clicking
+an alert reuses this step's alert detail UI.
+
 ## Limitations
 
 - `ProfileId`/`ProfileName` are unpopulated (the monitoring engine doesn't propagate per-target profile identity).

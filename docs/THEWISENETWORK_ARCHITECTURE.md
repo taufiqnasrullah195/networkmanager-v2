@@ -408,6 +408,10 @@ STEP 12 (see `docs/PERSISTENT_STATE.md`) adds SQLite persistence behind the exis
 - `network_monitoring_history` + `network_alert_history` read-only AI tools; a minimal History panel in `NetworkMonitoringView`.
 - SNMP telemetry (Step 13) integrates as a monitoring check: an `SnmpTelemetry` result (timeout → monitoring failure; interface status/counters → evidence) flows through the same `HealthEvaluator`/`AlertEngine` path. See `docs/SNMP_TELEMETRY.md`.
 
+### 9.9 Network Health Dashboard (implemented)
+
+STEP 14 (see `docs/NETWORK_HEALTH_DASHBOARD.md`) adds a presentation-only dashboard: `DashboardAggregator` (cross-platform) aggregates `IMonitoringQuery`/`IAlertQuery`/history repos/`ISnmpTelemetryRepository` into a `DashboardSnapshot` (health summary, device table, active alerts, recent events, interface health/issues, latency, availability). `NetworkHealthDashboardView`/`ViewModel` present it; "Analyze with AI" hands off to the copilot through the existing orchestrator.
+
 ---
 
 ## 10. Agent execution boundary (Planned)

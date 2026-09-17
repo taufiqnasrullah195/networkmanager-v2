@@ -187,6 +187,11 @@ The in-memory stores are replaced by persistent SQLite-backed stores (see `docs/
 the counter-safe `IInterfaceRateCalculator`, SQLite telemetry history (schema v2), and two read-only AI tools.
 SNMP is strictly read-only — no SET, no configuration changes, no remediation.
 
+## Network Health Dashboard (Step 14)
+
+`docs/NETWORK_HEALTH_DASHBOARD.md` documents the presentation-only dashboard that aggregates this monitoring state
+(plus alerts, history, and SNMP telemetry) into a single operational view.
+
 ## Limitations
 
 - SNMP/HTTP monitoring, persistent history, analytics, alerting, and dashboards are **out of scope** (next

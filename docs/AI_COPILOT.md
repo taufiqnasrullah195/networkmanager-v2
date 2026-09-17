@@ -103,6 +103,13 @@ tested (no IP addresses / stack fragments leak into UI status text).
 
 ## Approval
 
+## Dashboard handoff (Step 14)
+
+The Network Health Dashboard (`docs/NETWORK_HEALTH_DASHBOARD.md`) offers an "Analyze with AI" button that navigates
+here with a contextual prompt (e.g. "Analyze the current health of Gateway using available monitoring evidence.") via
+`AiCopilotHandoff.PendingPrompt`. AI remains behind the tool orchestrator + policy; the dashboard has no direct AI
+access.
+
 The copilot goes through `ToolCallOrchestrator` like everyone else: MEDIUM/HIGH → `ApprovalRequired` (nothing
 executes), CRITICAL → `PolicyDenied`. There is **no approval bypass path**; the interactive approval dialog is a
 future step — until then, medium/high tools simply don't run from the copilot (tested).
