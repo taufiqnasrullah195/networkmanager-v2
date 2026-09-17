@@ -89,7 +89,7 @@ public static class MonitoringComposition
         NetworkToolCollection.RegisterAll(registry);
 
         var execution = new ToolExecutionService(registry);
-        var executor = new MonitoringCheckExecutor(execution);
+        var executor = new MonitoringCheckExecutor(execution, SnmpComposition.Collector);
 
         return new MonitoringEngine(options, executor, store: PersistenceComposition.MonitoringStateStore, logger: new Log4netMonitoringLogger());
     }

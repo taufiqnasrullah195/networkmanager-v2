@@ -22,4 +22,5 @@ public enum ToolCategory
     Routing = 4,
     Monitoring = 5,
     Alerts = 6,
+    Snmp = 7,
 }

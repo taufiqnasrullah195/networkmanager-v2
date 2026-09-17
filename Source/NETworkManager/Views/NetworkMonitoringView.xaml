@@ -14,6 +14,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Global controls + status -->
@@ -191,26 +192,42 @@
                         <ItemsControl Grid.Row="1" ItemsSource="{Binding Checks}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type viewModels:MonitoringCheckItemViewModel}">
-                                    <Grid Margin="0,0,0,4">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="130" />
-                                            <ColumnDefinition Width="130" />
-                                            <ColumnDefinition Width="60" />
-                                            <ColumnDefinition Width="70" />
-                                            <ColumnDefinition Width="70" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
-                                        </Grid.ColumnDefinitions>
-                                        <ComboBox Grid.Column="0" Margin="0,0,4,0" SelectedItem="{Binding Type, Mode=TwoWay}"
-                                                  ItemsSource="{Binding DataContext.CheckTypeOptions, RelativeSource={RelativeSource AncestorType=UserControl}}" />
-                                        <TextBox Grid.Column="1" Text="{Binding TargetId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Target id" />
-                                        <TextBox Grid.Column="2" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Port (TCP)" />
-                                        <TextBox Grid.Column="3" Text="{Binding TimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Timeout (s)" />
-                                        <TextBox Grid.Column="4" Text="{Binding IntervalSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Interval (s)" />
-                                        <CheckBox Grid.Column="5" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,6,0" />
-                                        <Button Grid.Column="6" Content="✕" Command="{Binding DataContext.RemoveCheckCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}" Padding="6,0" />
-                                    </Grid>
+                                    <StackPanel Margin="0,0,0,6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="130" />
+                                                <ColumnDefinition Width="130" />
+                                                <ColumnDefinition Width="60" />
+                                                <ColumnDefinition Width="70" />
+                                                <ColumnDefinition Width="70" />
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox Grid.Column="0" Margin="0,0,4,0" SelectedItem="{Binding Type, Mode=TwoWay}"
+                                                      ItemsSource="{Binding DataContext.CheckTypeOptions, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                            <TextBox Grid.Column="1" Text="{Binding TargetId, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Target id" />
+                                            <TextBox Grid.Column="2" Text="{Binding Port, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Port (TCP)" />
+                                            <TextBox Grid.Column="3" Text="{Binding TimeoutSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Timeout (s)" />
+                                            <TextBox Grid.Column="4" Text="{Binding IntervalSeconds, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="Interval (s)" />
+                                            <CheckBox Grid.Column="5" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                            <Button Grid.Column="6" Content="✕" Command="{Binding DataContext.RemoveCheckCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}" Padding="6,0" />
+                                        </Grid>
+                                        <Grid Margin="0,2,0,0">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="130" />
+                                                <ColumnDefinition Width="60" />
+                                                <ColumnDefinition Width="170" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <ComboBox Grid.Column="0" Margin="0,0,4,0" SelectedItem="{Binding SnmpVersion, Mode=TwoWay}"
+                                                      ItemsSource="{Binding DataContext.SnmpVersionOptions, RelativeSource={RelativeSource AncestorType=UserControl}}" ToolTip="SNMP version" />
+                                            <TextBox Grid.Column="1" Text="{Binding SnmpPort, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="SNMP port" />
+                                            <TextBox Grid.Column="2" Text="{Binding SnmpCredentialReference, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,4,0" ToolTip="SNMP credential reference" />
+                                            <ComboBox Grid.Column="3" SelectedItem="{Binding SnmpCollectionMode, Mode=TwoWay}"
+                                                      ItemsSource="{Binding DataContext.SnmpCollectionModeOptions, RelativeSource={RelativeSource AncestorType=UserControl}}" ToolTip="SNMP collection mode" />
+                                        </Grid>
+                                    </StackPanel>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
@@ -370,6 +387,95 @@
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+            </Grid>
+        </Grid>
+
+        <!-- SNMP Telemetry (Step 13) -->
+        <Grid Grid.Row="5" Margin="0,10,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" Text="SNMP Telemetry" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,0,4" />
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="440" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Grid.Column="0" BorderThickness="1" BorderBrush="{DynamicResource MahApps.Brushes.Gray7}" Padding="8">
+                    <StackPanel>
+                        <TextBlock Text="SNMP Credential (stored encrypted)" FontWeight="Bold" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,0,4" />
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Left" Text="Reference" Width="90" Style="{DynamicResource DefaultTextBlock}" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding SnmpCredentialReference, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Left" Text="Version" Width="90" Style="{DynamicResource DefaultTextBlock}" VerticalAlignment="Center" />
+                            <ComboBox SelectedItem="{Binding SnmpCredentialVersion, Mode=TwoWay}" ItemsSource="{Binding SnmpVersionOptions}" />
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Left" Text="Community" Width="90" Style="{DynamicResource DefaultTextBlock}" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding SnmpCommunity, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Left" Text="Username" Width="90" Style="{DynamicResource DefaultTextBlock}" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding SnmpUsername, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Left" Text="Auth pwd" Width="90" Style="{DynamicResource DefaultTextBlock}" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding SnmpAuthPassword, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+                        <DockPanel Margin="0,0,0,4">
+                            <TextBlock DockPanel.Dock="Left" Text="Priv pwd" Width="90" Style="{DynamicResource DefaultTextBlock}" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding SnmpPrivPassword, UpdateSourceTrigger=PropertyChanged}" />
+                        </DockPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <Button Content="Configure" Command="{Binding ConfigureSnmpCredentialCommand}" Margin="0,0,6,0" />
+                            <Button Content="Remove" Command="{Binding RemoveSnmpCredentialCommand}" />
+                            <TextBlock Text="{Binding SnmpCredentialStatus}" Margin="10,0,0,0" Foreground="{DynamicResource MahApps.Brushes.Accent}" VerticalAlignment="Center" Style="{DynamicResource DefaultTextBlock}" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+                <Grid Grid.Column="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,4">
+                        <Button DockPanel.Dock="Right" Content="Refresh" Command="{Binding RefreshSnmpCommand}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="Device" Style="{DynamicResource DefaultTextBlock}" VerticalAlignment="Center" />
+                            <TextBox Text="{Binding SnmpDeviceTargetId, UpdateSourceTrigger=PropertyChanged}" Width="150" Margin="8,0,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                    <TextBlock Grid.Row="1" Text="{Binding SnmpDeviceSummary}" TextWrapping="Wrap" Style="{DynamicResource DefaultTextBlock}" Margin="0,0,0,4" />
+                    <ListBox Grid.Row="2" ItemsSource="{Binding SnmpInterfaces}" MaxHeight="120">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate DataType="{x:Type viewModels:SnmpInterfaceRowViewModel}">
+                                <Grid Margin="2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40" />
+                                        <ColumnDefinition Width="110" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="80" />
+                                        <ColumnDefinition Width="90" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Index}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="2" Text="{Binding Admin}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="3" Text="{Binding Oper}" Foreground="{DynamicResource MahApps.Brushes.Accent}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="4" Text="{Binding Speed}" Style="{DynamicResource DefaultTextBlock}" />
+                                    <TextBlock Grid.Column="5" Text="{Binding InOctets}" Style="{DynamicResource DefaultTextBlock}" Opacity="0.8" />
+                                    <TextBlock Grid.Column="6" Text="{Binding OutOctets}" Style="{DynamicResource DefaultTextBlock}" Opacity="0.8" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
             </Grid>
         </Grid>
     </Grid>

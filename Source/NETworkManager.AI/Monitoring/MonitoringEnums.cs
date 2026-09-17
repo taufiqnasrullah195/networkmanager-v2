@@ -18,6 +18,7 @@ public enum MonitorCheckType
     Ping = 0,
     TcpConnectivity = 1,
     DnsResolution = 2,
+    SnmpTelemetry = 3,
 }
 
 /// <summary>Status of a single monitoring check result. Failures are NOT collapsed into one bucket.</summary>
@@ -45,6 +46,7 @@ public enum MonitorErrorClass
     Timeout = 6,
     Cancelled = 7,
     ExecutionError = 8,
+    SnmpTelemetry = 9,
 }
 
 /// <summary>Deterministic, aggregated health of one monitored target.</summary>

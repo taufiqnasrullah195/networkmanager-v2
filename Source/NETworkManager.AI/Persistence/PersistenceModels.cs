@@ -58,4 +58,6 @@ public sealed record RetentionPolicy
     public TimeSpan MonitoringResultRetention { get; init; } = TimeSpan.FromDays(30);
     public TimeSpan StateTransitionRetention { get; init; } = TimeSpan.FromDays(90);
     public TimeSpan ResolvedAlertRetention { get; init; } = TimeSpan.FromDays(180);
+    public TimeSpan SnmpDeviceTelemetryRetention { get; init; } = TimeSpan.FromDays(90);
+    public TimeSpan SnmpInterfaceTelemetryRetention { get; init; } = TimeSpan.FromDays(30);
 }

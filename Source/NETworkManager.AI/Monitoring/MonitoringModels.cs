@@ -1,4 +1,5 @@
 using NETworkManager.AI.Abstractions;
+using NETworkManager.AI.Snmp;
 
 namespace NETworkManager.AI.Monitoring;
 
@@ -67,8 +68,11 @@ public sealed record MonitoringCheck
     /// <summary>Human description of what a healthy result looks like (e.g. "TCP connection possible").</summary>
     public string? Expected { get; init; }
 
-    /// <summary>Extension metadata (future SNMP/HTTP checks) — kept opaque and secret-free.</summary>
+    /// <summary>Extension metadata (future HTTP checks) — kept opaque and secret-free.</summary>
     public IReadOnlyDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>();
+
+    /// <summary>SNMP configuration (only for <see cref="MonitorCheckType.SnmpTelemetry"/>). Contains no secrets.</summary>
+    public SnmpCheckConfig? Snmp { get; init; }
 
     public IReadOnlyList<string> Validate()
     {
@@ -82,6 +86,16 @@ public sealed record MonitoringCheck
 
         if (Type == MonitorCheckType.TcpConnectivity && Port is < 1 or > 65535)
             errors.Add("TCP port must be between 1 and 65535.");
+
+        if (Type == MonitorCheckType.SnmpTelemetry && Snmp is null)
+        {
+            errors.Add("SNMP telemetry check requires SNMP configuration.");
+        }
+        else if (Snmp is { } snmp)
+        {
+            foreach (var error in snmp.Validate())
+                errors.Add($"SNMP: {error}");
+        }
 
         if (Timeout is { } timeout && (timeout < TimeSpan.FromMilliseconds(100) || timeout > TimeSpan.FromMinutes(10)))
             errors.Add("Check timeout must be between 100 ms and 10 minutes.");

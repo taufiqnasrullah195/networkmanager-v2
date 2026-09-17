@@ -16,7 +16,7 @@ public static class PersistenceClock
 /// </summary>
 public sealed class SqliteDatabase
 {
-    public const int CurrentSchemaVersion = 1;
+    public const int CurrentSchemaVersion = 2;
 
     private const string SchemaV1 = """
         CREATE TABLE IF NOT EXISTS monitoring_results (
@@ -79,6 +79,45 @@ public sealed class SqliteDatabase
         CREATE INDEX IF NOT EXISTS ix_occurrences_alert_time ON alert_occurrences(alert_id, timestamp_ms);
         """;
 
+    // SNMP telemetry history (Step 13). Counters are stored as TEXT (exact decimal) because Counter64 can exceed
+    // SQLite's signed 64-bit INTEGER range; speed is a Gauge32 (fits INTEGER). No secrets anywhere.
+    private const string SchemaV2 = """
+        CREATE TABLE IF NOT EXISTS snmp_device_telemetry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            target TEXT NOT NULL,
+            timestamp_ms INTEGER NOT NULL,
+            sys_name TEXT,
+            sys_description TEXT,
+            sys_object_id TEXT,
+            uptime_ms INTEGER,
+            interface_count INTEGER NOT NULL,
+            reachable INTEGER NOT NULL,
+            collection_status INTEGER NOT NULL,
+            response_ms INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS ix_snmp_device_time ON snmp_device_telemetry(device_id, timestamp_ms);
+
+        CREATE TABLE IF NOT EXISTS snmp_interface_telemetry (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            device_id TEXT NOT NULL,
+            interface_index INTEGER NOT NULL,
+            interface_name TEXT,
+            admin_status INTEGER NOT NULL,
+            oper_status INTEGER NOT NULL,
+            speed INTEGER,
+            in_octets TEXT,
+            out_octets TEXT,
+            in_errors TEXT,
+            out_errors TEXT,
+            in_discards TEXT,
+            out_discards TEXT,
+            uses_hc INTEGER NOT NULL,
+            timestamp_ms INTEGER NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS ix_snmp_interface_time ON snmp_interface_telemetry(device_id, interface_index, timestamp_ms);
+        """;
+
     private readonly string _connectionString;
     private readonly string _path;
 
@@ -113,6 +152,7 @@ public sealed class SqliteDatabase
         if (version == 0)
         {
             Execute(connection, SchemaV1);
+            Execute(connection, SchemaV2);
             WriteUserVersion(connection, CurrentSchemaVersion);
         }
         else if (version < CurrentSchemaVersion)
@@ -129,11 +169,9 @@ public sealed class SqliteDatabase
 
     private static void ApplyMigrations(SqliteConnection connection, int fromVersion)
     {
-        // Future migrations land here; version 1 is the only schema so far.
-        if (fromVersion < CurrentSchemaVersion)
-        {
-            // No-op placeholder for future additive migrations.
-        }
+        // v1 → v2: add the SNMP telemetry history tables.
+        if (fromVersion < 2)
+            Execute(connection, SchemaV2);
 
         WriteUserVersion(connection, CurrentSchemaVersion);
     }

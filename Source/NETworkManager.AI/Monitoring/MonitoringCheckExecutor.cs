@@ -1,22 +1,25 @@
 using NETworkManager.AI.Abstractions;
 using NETworkManager.AI.Models;
+using NETworkManager.AI.Snmp;
 
 namespace NETworkManager.AI.Monitoring;
 
 /// <summary>
-///     Maps a monitoring check to the existing read-only tool pipeline and maps the structured tool result into a
-///     <see cref="MonitoringResult"/>. Reuses <c>ping</c>/<c>tcp_test</c>/<c>dns_lookup</c> — no duplicate
-///     networking, no AI involvement, no shell.
+///     Maps a monitoring check to the existing read-only tool pipeline (or the SNMP telemetry collector) and maps the
+///     structured result into a <see cref="MonitoringResult"/>. Reuses <c>ping</c>/<c>tcp_test</c>/<c>dns_lookup</c>
+///     and the SNMP collector — no duplicate networking, no AI involvement, no shell.
 /// </summary>
 public sealed class MonitoringCheckExecutor : IMonitoringCheckExecutor
 {
     private const int ExecutorOuterBoundBufferMilliseconds = 500;
 
     private readonly IToolExecutionService _execution;
+    private readonly ISnmpTelemetryCollector? _snmpCollector;
 
-    public MonitoringCheckExecutor(IToolExecutionService execution)
+    public MonitoringCheckExecutor(IToolExecutionService execution, ISnmpTelemetryCollector? snmpCollector = null)
     {
         _execution = execution ?? throw new ArgumentNullException(nameof(execution));
+        _snmpCollector = snmpCollector;
     }
 
     public async Task<MonitoringResult> ExecuteAsync(MonitoringCheck check, MonitoringTarget target,
@@ -37,6 +40,9 @@ public sealed class MonitoringCheckExecutor : IMonitoringCheckExecutor
                 "Target has no IP address or hostname configured.", observed: null,
                 started: DateTimeOffset.UtcNow, duration: TimeSpan.Zero);
         }
+
+        if (check.Type == MonitorCheckType.SnmpTelemetry)
+            return await ExecuteSnmpAsync(check, target, address, cancellationToken).ConfigureAwait(false);
 
         var started = DateTimeOffset.UtcNow;
         var timeout = check.Timeout ?? TimeSpan.FromSeconds(5);
@@ -96,6 +102,106 @@ public sealed class MonitoringCheckExecutor : IMonitoringCheckExecutor
         }
 
         return Map(toolResult, check, target, started, toolName);
+    }
+
+    private async Task<MonitoringResult> ExecuteSnmpAsync(MonitoringCheck check, MonitoringTarget target, string address,
+        CancellationToken cancellationToken)
+    {
+        if (_snmpCollector is null)
+        {
+            return Fail(check, target, MonitorErrorClass.ExecutionError, MonitoringResultStatus.Error,
+                "SNMP telemetry collector is not configured.", observed: null,
+                started: DateTimeOffset.UtcNow, duration: TimeSpan.Zero);
+        }
+
+        if (check.Snmp is null)
+        {
+            return Fail(check, target, MonitorErrorClass.ExecutionError, MonitoringResultStatus.Error,
+                "SNMP check is missing its configuration.", observed: null,
+                started: DateTimeOffset.UtcNow, duration: TimeSpan.Zero);
+        }
+
+        var started = DateTimeOffset.UtcNow;
+        var timeout = check.Timeout ?? TimeSpan.FromSeconds(5);
+
+        try
+        {
+            var collection = await _snmpCollector
+                .CollectAsync(target.Id, address, check.Snmp, cancellationToken)
+                .WaitAsync(timeout + TimeSpan.FromMilliseconds(ExecutorOuterBoundBufferMilliseconds), cancellationToken)
+                .ConfigureAwait(false);
+
+            return MapSnmp(collection, check, target, started);
+        }
+        catch (OperationCanceledException)
+        {
+            return Fail(check, target, MonitorErrorClass.Cancelled, MonitoringResultStatus.Cancelled,
+                "Check was cancelled.", observed: null, started, DateTimeOffset.UtcNow - started);
+        }
+        catch (TimeoutException)
+        {
+            return Fail(check, target, MonitorErrorClass.Timeout, MonitoringResultStatus.Timeout,
+                $"SNMP check '{check.CheckId}' exceeded its timeout of {timeout.TotalSeconds:0.#}s.",
+                observed: null, started, DateTimeOffset.UtcNow - started);
+        }
+    }
+
+    private static MonitoringResult MapSnmp(SnmpCollectionResult collection, MonitoringCheck check,
+        MonitoringTarget target, DateTimeOffset started)
+    {
+        var duration = DateTimeOffset.UtcNow - started;
+        var device = collection.Device;
+
+        var (status, classification, message) = collection.Status switch
+        {
+            SnmpCollectionStatus.Success => (
+                MonitoringResultStatus.Healthy,
+                MonitorErrorClass.None,
+                device is null
+                    ? $"SNMP telemetry collected from '{collection.Host}' ({collection.Interfaces.Count} interface(s))."
+                    : $"SNMP telemetry collected from '{collection.Host}': sysName '{device.SysName ?? "unavailable"}' ({collection.Interfaces.Count} interface(s))."),
+
+            SnmpCollectionStatus.Partial => (
+                MonitoringResultStatus.Warning,
+                MonitorErrorClass.SnmpTelemetry,
+                $"SNMP telemetry partially collected from '{collection.Host}': {string.Join(" ", collection.Errors)}"),
+
+            SnmpCollectionStatus.Timeout => (
+                MonitoringResultStatus.Timeout,
+                MonitorErrorClass.Timeout,
+                $"SNMP request to '{collection.Host}' timed out."),
+
+            SnmpCollectionStatus.Unavailable => (
+                MonitoringResultStatus.Unhealthy,
+                MonitorErrorClass.SnmpTelemetry,
+                $"SNMP device '{collection.Host}' did not respond."),
+
+            _ => (
+                MonitoringResultStatus.Unhealthy,
+                MonitorErrorClass.SnmpTelemetry,
+                $"SNMP telemetry collection failed for '{collection.Host}': {string.Join(" ", collection.Errors)}"),
+        };
+
+        return new MonitoringResult
+        {
+            CheckId = check.CheckId,
+            TargetId = target.Id,
+            CheckType = check.Type,
+            Status = status,
+            ErrorClassification = classification,
+            Timestamp = started,
+            Duration = duration,
+            SafeMessage = message,
+            Observed = collection,
+            Evidence = new MonitoringEvidence
+            {
+                Source = $"SNMP.{collection.Host}",
+                Summary = message,
+                Data = collection,
+                Timestamp = started,
+            },
+            CorrelationId = check.CheckId,
+        };
     }
 
     private static MonitoringResult Map(ToolResult result, MonitoringCheck check, MonitoringTarget target,

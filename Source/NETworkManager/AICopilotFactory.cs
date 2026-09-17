@@ -12,6 +12,7 @@ using NETworkManager.AI.Persistence;
 using NETworkManager.AI.Providers;
 using NETworkManager.AI.Providers.Authentication;
 using NETworkManager.AI.Registry;
+using NETworkManager.AI.Snmp;
 using NETworkManager.AI.Tools;
 
 namespace NETworkManager;
@@ -64,6 +65,13 @@ public static class AICopilotFactory
         {
             registry.Register(new MonitoringHistoryTool(history));
             registry.Register(new AlertHistoryTool(history));
+        }
+
+        // Expose the Step 13 SNMP telemetry to the copilot as read-only tools (when persistence is available).
+        if (PersistenceComposition.SnmpTelemetryRepository is { } snmpRepository)
+        {
+            registry.Register(new DeviceTelemetryTool(snmpRepository));
+            registry.Register(new InterfaceTelemetryTool(snmpRepository));
         }
 
         var orchestrator = new ToolCallOrchestrator(registry, execution, logger: notifier);

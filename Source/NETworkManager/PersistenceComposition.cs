@@ -27,6 +27,7 @@ public static class PersistenceComposition
     private static SqliteAlertStore? _alertStore;
     private static SqliteHistoryRepository? _history;
     private static SqliteRetentionService? _retention;
+    private static SqliteSnmpTelemetryRepository? _snmpRepository;
     private static string? _error;
 
     public static IMonitoringStateStore? MonitoringStateStore => _monitoringStore;
@@ -36,6 +37,9 @@ public static class PersistenceComposition
     public static SqliteHistoryRepository? History => _history;
 
     public static SqliteRetentionService? Retention => _retention;
+
+    /// <summary>SNMP telemetry history repository (Step 13); null when persistence is unavailable.</summary>
+    public static ISnmpTelemetryRepository? SnmpTelemetryRepository => _snmpRepository;
 
     /// <summary>Human-readable error when initialization failed, else null.</summary>
     public static string? InitializationError => _error;
@@ -70,6 +74,7 @@ public static class PersistenceComposition
             _alertStore = alertStore;
             _history = new SqliteHistoryRepository(database);
             _retention = new SqliteRetentionService(database);
+            _snmpRepository = new SqliteSnmpTelemetryRepository(database);
             _error = null;
         }
         catch (Exception ex)

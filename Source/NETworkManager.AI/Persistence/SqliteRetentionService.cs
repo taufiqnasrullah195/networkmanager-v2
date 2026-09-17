@@ -51,6 +51,15 @@ public sealed class SqliteRetentionService : IDataRetentionService
             "DELETE FROM alerts WHERE status = 2 AND resolved_at_ms IS NOT NULL AND resolved_at_ms < $cutoff;",
             ("$cutoff", now - (long)policy.ResolvedAlertRetention.TotalMilliseconds));
 
+        // SNMP telemetry history (Step 13). Interface counters are high-frequency; keep a shorter window than device snapshots.
+        deleted += ExecuteDelete(connection,
+            "DELETE FROM snmp_device_telemetry WHERE timestamp_ms < $cutoff;",
+            ("$cutoff", now - (long)policy.SnmpDeviceTelemetryRetention.TotalMilliseconds));
+
+        deleted += ExecuteDelete(connection,
+            "DELETE FROM snmp_interface_telemetry WHERE timestamp_ms < $cutoff;",
+            ("$cutoff", now - (long)policy.SnmpInterfaceTelemetryRetention.TotalMilliseconds));
+
         return deleted;
     }
 

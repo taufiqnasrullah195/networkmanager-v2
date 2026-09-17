@@ -13,6 +13,7 @@ using NETworkManager.AI.Abstractions;
 using NETworkManager.AI.Alerts;
 using NETworkManager.AI.Monitoring;
 using NETworkManager.AI.Models;
+using NETworkManager.AI.Snmp;
 using NETworkManager.Utilities;
 
 namespace NETworkManager.ViewModels;
@@ -85,6 +86,10 @@ public sealed class MonitoringCheckItemViewModel : INotifyPropertyChanged
     private string _timeoutSeconds = string.Empty;
     private string _intervalSeconds = string.Empty;
     private bool _enabled = true;
+    private string _snmpVersion = "V2C";
+    private int _snmpPort = 161;
+    private string _snmpCredentialReference = string.Empty;
+    private string _snmpCollectionMode = "SystemAndInterfaces";
 
     public string CheckId { get => _checkId; set { _checkId = value; OnPropertyChanged(); } }
     public string TargetId { get => _targetId; set { _targetId = value; OnPropertyChanged(); } }
@@ -93,6 +98,10 @@ public sealed class MonitoringCheckItemViewModel : INotifyPropertyChanged
     public string TimeoutSeconds { get => _timeoutSeconds; set { _timeoutSeconds = value; OnPropertyChanged(); } }
     public string IntervalSeconds { get => _intervalSeconds; set { _intervalSeconds = value; OnPropertyChanged(); } }
     public bool Enabled { get => _enabled; set { _enabled = value; OnPropertyChanged(); } }
+    public string SnmpVersion { get => _snmpVersion; set { _snmpVersion = value; OnPropertyChanged(); } }
+    public int SnmpPort { get => _snmpPort; set { _snmpPort = value; OnPropertyChanged(); } }
+    public string SnmpCredentialReference { get => _snmpCredentialReference; set { _snmpCredentialReference = value; OnPropertyChanged(); } }
+    public string SnmpCollectionMode { get => _snmpCollectionMode; set { _snmpCollectionMode = value; OnPropertyChanged(); } }
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -137,6 +146,18 @@ public sealed class AlertHistoryRowViewModel
     public string Status { get; init; } = string.Empty;
     public string Occurrences { get; init; } = string.Empty;
     public string LastSeen { get; init; } = string.Empty;
+}
+
+/// <summary>Read-only display row for one SNMP interface telemetry sample.</summary>
+public sealed class SnmpInterfaceRowViewModel
+{
+    public string Index { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string Admin { get; init; } = string.Empty;
+    public string Oper { get; init; } = string.Empty;
+    public string Speed { get; init; } = string.Empty;
+    public string InOctets { get; init; } = string.Empty;
+    public string OutOctets { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -245,6 +266,41 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
     private string _historyNote = string.Empty;
     public string HistoryNote { get => _historyNote; private set { _historyNote = value; OnPropertyChanged(); } }
 
+    // ----- SNMP credential + telemetry (Step 13) ---------------------------
+
+    public string[] SnmpVersionOptions { get; } = Enum.GetNames<SnmpVersion>();
+
+    public string[] SnmpCollectionModeOptions { get; } = Enum.GetNames<SnmpCollectionMode>();
+
+    private string _snmpCredentialReference = string.Empty;
+    public string SnmpCredentialReference { get => _snmpCredentialReference; set { _snmpCredentialReference = value; OnPropertyChanged(); } }
+
+    private string _snmpCredentialVersion = "V2C";
+    public string SnmpCredentialVersion { get => _snmpCredentialVersion; set { _snmpCredentialVersion = value; OnPropertyChanged(); } }
+
+    private string _snmpCommunity = string.Empty;
+    public string SnmpCommunity { get => _snmpCommunity; set { _snmpCommunity = value; OnPropertyChanged(); } }
+
+    private string _snmpUsername = string.Empty;
+    public string SnmpUsername { get => _snmpUsername; set { _snmpUsername = value; OnPropertyChanged(); } }
+
+    private string _snmpAuthPassword = string.Empty;
+    public string SnmpAuthPassword { get => _snmpAuthPassword; set { _snmpAuthPassword = value; OnPropertyChanged(); } }
+
+    private string _snmpPrivPassword = string.Empty;
+    public string SnmpPrivPassword { get => _snmpPrivPassword; set { _snmpPrivPassword = value; OnPropertyChanged(); } }
+
+    private string _snmpCredentialStatus = string.Empty;
+    public string SnmpCredentialStatus { get => _snmpCredentialStatus; private set { _snmpCredentialStatus = value; OnPropertyChanged(); } }
+
+    private string _snmpDeviceTargetId = string.Empty;
+    public string SnmpDeviceTargetId { get => _snmpDeviceTargetId; set { _snmpDeviceTargetId = value; OnPropertyChanged(); } }
+
+    private string _snmpDeviceSummary = string.Empty;
+    public string SnmpDeviceSummary { get => _snmpDeviceSummary; private set { _snmpDeviceSummary = value; OnPropertyChanged(); } }
+
+    public ObservableCollection<SnmpInterfaceRowViewModel> SnmpInterfaces { get; } = [];
+
     // ----- commands ---------------------------------------------------------
 
     public ICommand StartMonitoringCommand { get; }
@@ -263,6 +319,10 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
     public ICommand RemoveCheckCommand { get; }
 
     public ICommand AcknowledgeAlertCommand { get; }
+
+    public ICommand ConfigureSnmpCredentialCommand { get; }
+    public ICommand RemoveSnmpCredentialCommand { get; }
+    public ICommand RefreshSnmpCommand { get; }
 
     public NetworkMonitoringViewModel(IMonitoringProfileService profileService)
     {
@@ -284,6 +344,9 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
         RemoveCheckCommand = new RelayCommand(p => RemoveCheck((MonitoringCheckItemViewModel)p!), _ => IsEditing);
         AcknowledgeAlertCommand = new RelayCommand(_ => AcknowledgeSelectedAlert(), _ => SelectedAlert is { Status: "Open" });
         LoadHistoryCommand = new RelayCommand(_ => _ = LoadHistoryAsync());
+        ConfigureSnmpCredentialCommand = new RelayCommand(_ => ConfigureSnmpCredential());
+        RemoveSnmpCredentialCommand = new RelayCommand(_ => RemoveSnmpCredential());
+        RefreshSnmpCommand = new RelayCommand(_ => _ = RefreshSnmpAsync());
 
         MonitoringComposition.Instance.Subscribe(this);
         AlertComposition.Alerts.Subscribe(this);
@@ -475,6 +538,10 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
                 TimeoutSeconds = check.Timeout?.TotalSeconds.ToString("0") ?? string.Empty,
                 IntervalSeconds = check.Interval?.TotalSeconds.ToString("0") ?? string.Empty,
                 Enabled = check.Enabled,
+                SnmpVersion = check.Snmp?.Version.ToString() ?? "V2C",
+                SnmpPort = check.Snmp?.Port ?? 161,
+                SnmpCredentialReference = check.Snmp?.CredentialReference ?? string.Empty,
+                SnmpCollectionMode = check.Snmp?.CollectionMode.ToString() ?? "SystemAndInterfaces",
             });
         }
 
@@ -769,10 +836,130 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
         return (profile, errors);
     }
 
+    private void ConfigureSnmpCredential()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(SnmpCredentialReference))
+            {
+                SnmpCredentialStatus = "Enter a credential reference.";
+                return;
+            }
+
+            var version = Enum.TryParse<SnmpVersion>(SnmpCredentialVersion, out var v) ? v : SnmpVersion.V2C;
+            var hasAuth = !string.IsNullOrWhiteSpace(SnmpAuthPassword);
+            var hasPriv = !string.IsNullOrWhiteSpace(SnmpPrivPassword);
+
+            var credential = new SnmpCredential
+            {
+                Version = version,
+                Community = string.IsNullOrWhiteSpace(SnmpCommunity) ? null : SnmpCommunity,
+                Username = string.IsNullOrWhiteSpace(SnmpUsername) ? null : SnmpUsername,
+                SecurityLevel = version == SnmpVersion.V3
+                    ? (hasAuth && hasPriv ? SnmpSecurityLevel.AuthPriv : hasAuth ? SnmpSecurityLevel.AuthNoPriv : SnmpSecurityLevel.NoAuthNoPriv)
+                    : SnmpSecurityLevel.NoAuthNoPriv,
+                AuthPassword = hasAuth ? SnmpAuthPassword : null,
+                PrivPassword = hasPriv ? SnmpPrivPassword : null,
+            };
+
+            var errors = credential.Validate();
+            if (errors.Count > 0)
+            {
+                SnmpCredentialStatus = string.Join(" ", errors);
+                return;
+            }
+
+            SnmpComposition.CredentialStore.StoreAsync(SnmpCredentialReference, SnmpCredentialCodec.Encode(credential))
+                .GetAwaiter().GetResult();
+
+            SnmpCommunity = string.Empty;
+            SnmpAuthPassword = string.Empty;
+            SnmpPrivPassword = string.Empty;
+
+            SnmpCredentialStatus = "✓ Configured";
+        }
+        catch (Exception ex)
+        {
+            SnmpCredentialStatus = "Failed to configure credential.";
+            Log.Warn("Failed to configure SNMP credential.", ex);
+        }
+    }
+
+    private void RemoveSnmpCredential()
+    {
+        if (string.IsNullOrWhiteSpace(SnmpCredentialReference))
+        {
+            SnmpCredentialStatus = "Enter a credential reference.";
+            return;
+        }
+
+        SnmpComposition.CredentialStore.RemoveAsync(SnmpCredentialReference).GetAwaiter().GetResult();
+        SnmpCredentialStatus = "Removed.";
+    }
+
+    private async Task RefreshSnmpAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SnmpDeviceTargetId))
+        {
+            SnmpDeviceSummary = "Enter a device id to view telemetry.";
+            SnmpInterfaces.Clear();
+            return;
+        }
+
+        var repository = PersistenceComposition.SnmpTelemetryRepository;
+        if (repository is null)
+        {
+            SnmpDeviceSummary = "Telemetry storage is unavailable.";
+            SnmpInterfaces.Clear();
+            return;
+        }
+
+        try
+        {
+            var device = await repository.GetLatestDeviceTelemetryAsync(SnmpDeviceTargetId);
+            var interfaces = await repository.GetLatestInterfaceTelemetryAsync(SnmpDeviceTargetId, 200);
+
+            if (device is null)
+            {
+                SnmpDeviceSummary = "No telemetry collected for this device yet.";
+                SnmpInterfaces.Clear();
+                return;
+            }
+
+            SnmpDeviceSummary =
+                $"sysName: {device.SysName ?? "unavailable"}   ·   {device.SysDescription ?? ""}   ·   uptime: {FormatUptime(device.Uptime)}   ·   interfaces: {device.InterfaceCount}";
+
+            SnmpInterfaces.Clear();
+            foreach (var i in interfaces)
+            {
+                SnmpInterfaces.Add(new SnmpInterfaceRowViewModel
+                {
+                    Index = i.InterfaceIndex.ToString(),
+                    Name = i.Name ?? i.InterfaceIndex.ToString(),
+                    Admin = i.AdminStatus.ToString(),
+                    Oper = i.OperationalStatus.ToString(),
+                    Speed = FormatSpeed(i.SpeedBitsPerSecond),
+                    InOctets = i.InOctets?.ToString() ?? "—",
+                    OutOctets = i.OutOctets?.ToString() ?? "—",
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            SnmpDeviceSummary = "Unable to load telemetry.";
+            Log.Warn("Failed to load SNMP telemetry.", ex);
+        }
+    }
+
+    private static string FormatUptime(TimeSpan? uptime) =>
+        uptime is null ? "unavailable" : $"{uptime.Value.TotalDays:0.#} days";
+
+    private static string FormatSpeed(ulong? bitsPerSecond) =>
+        bitsPerSecond is null ? "—" : $"{bitsPerSecond.Value / 1_000_000_000.0:0.#} Gbps";
+
     private static MonitoringTarget ToTarget(MonitoringTargetItemViewModel t)
     {
         var isIp = IPAddress.TryParse(t.Address, out _);
-
         return new MonitoringTarget
         {
             Id = t.Id,
@@ -785,16 +972,30 @@ public class NetworkMonitoringViewModel : ViewModelBase, IMonitoringObserver, IA
         };
     }
 
-    private static MonitoringCheck ToCheck(MonitoringCheckItemViewModel c) => new()
+    private static MonitoringCheck ToCheck(MonitoringCheckItemViewModel c)
     {
-        CheckId = c.CheckId,
-        TargetId = c.TargetId,
-        Type = Enum.TryParse<MonitorCheckType>(c.Type, out var type) ? type : MonitorCheckType.Ping,
-        Port = c.Port,
-        Timeout = ParseSeconds(c.TimeoutSeconds),
-        Interval = ParseSeconds(c.IntervalSeconds),
-        Enabled = c.Enabled,
-    };
+        var type = Enum.TryParse<MonitorCheckType>(c.Type, out var t) ? t : MonitorCheckType.Ping;
+
+        return new MonitoringCheck
+        {
+            CheckId = c.CheckId,
+            TargetId = c.TargetId,
+            Type = type,
+            Port = c.Port,
+            Timeout = ParseSeconds(c.TimeoutSeconds),
+            Interval = ParseSeconds(c.IntervalSeconds),
+            Enabled = c.Enabled,
+            Snmp = type == MonitorCheckType.SnmpTelemetry
+                ? new SnmpCheckConfig
+                {
+                    Version = Enum.TryParse<SnmpVersion>(c.SnmpVersion, out var sv) ? sv : SnmpVersion.V2C,
+                    Port = c.SnmpPort,
+                    CredentialReference = string.IsNullOrWhiteSpace(c.SnmpCredentialReference) ? null : c.SnmpCredentialReference,
+                    CollectionMode = Enum.TryParse<SnmpCollectionMode>(c.SnmpCollectionMode, out var cm) ? cm : SnmpCollectionMode.SystemAndInterfaces,
+                }
+                : null,
+        };
+    }
 
     private static TimeSpan? ParseSeconds(string? text)
     {
