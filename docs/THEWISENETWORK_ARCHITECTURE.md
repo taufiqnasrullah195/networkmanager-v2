@@ -370,6 +370,13 @@ Status:
 - `NetworkMonitoringView`/`ViewModel` — **implemented** (minimal status table; engine lifecycle view-scoped this step).
 - Reuses the upstream `Ping`/`DNSLookup` engines via the Step 3 wrappers (no duplicate networking); upstream WPF Ping Monitor untouched.
 
+STEP 10 (see `docs/MONITORING_PROFILES.md`) adds configuration management over this engine:
+
+- `IMonitoringProfileService` + `JsonMonitoringProfileRepository` (checksummed, versioned catalog; migrates the Step 9 single-profile file).
+- `MonitoringConfigurationApplier` (apply enabled profiles to the engine while stopped; resolves per-check interval/timeout).
+- Profile/target/check validation, `MonitoringProfileDraft` save/cancel, global Start/Stop commands, and the full editor in `NetworkMonitoringView`.
+- AI stays read-only: configuration writes are UI-only; `network_monitoring_status` gains no mutation surface.
+
 ---
 
 ## 10. Agent execution boundary (Planned)

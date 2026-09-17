@@ -136,6 +136,21 @@ hook is the follow-up.
 - Bounded concurrency, per-check timeouts, cancellation, idempotent start/stop, and no background task outliving
   `StopAsync`.
 
+## Configuration management (Step 10)
+
+Configuration is managed from the WPF editor (see `docs/MONITORING_PROFILES.md`), not hand-edited JSON:
+
+- `IMonitoringProfileService` (`MonitoringProfileService`) — CRUD + validation over a repository; the UI depends on
+  this abstraction, never on JSON.
+- `JsonMonitoringProfileRepository` — checksummed, versioned catalog (`monitoring-profiles.json`); migrates the
+  Step 9 single-profile file on first load; malformed data is rejected cleanly.
+- `MonitoringConfigurationApplier` — applies the enabled profiles to the engine (targets then checks, resolving
+  per-check interval/timeout from profile defaults), **while stopped**.
+- The editor is a `MonitoringProfileDraft`-based Save/Cancel surface (unsaved changes prompt on navigate/delete/
+  start), with multi-level validation (profile/target/check) and safe defaults (30s / 5s / 5).
+- Global Start/Stop commands; runtime status (Running/Stopped + per-target health) always from the engine.
+- The AI boundary is unchanged: `network_monitoring_status` stays read-only; configuration writes are UI-only.
+
 ## Limitations
 
 - SNMP/HTTP monitoring, persistent history, analytics, alerting, and dashboards are **out of scope** (next
