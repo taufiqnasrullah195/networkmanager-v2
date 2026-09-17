@@ -364,7 +364,7 @@ public class NetworkHealthDashboardViewModel : ViewModelBase
         try
         {
             var result = await NotificationComposition.SendTestAsync();
-            NotificationStatus = result is { Status: NotificationStatus.Sent }
+            NotificationStatus = result is { Status: NETworkManager.AI.Notifications.NotificationStatus.Sent }
                 ? "Test notification sent."
                 : $"Test notification: {result?.Status}";
         }
