@@ -379,6 +379,25 @@ STEP 10 (see `docs/MONITORING_PROFILES.md`) adds configuration management over t
 
 ---
 
+### 9.7 Alert Engine & Health State Notifications (implemented)
+
+STEP 11 (see `docs/ALERT_ENGINE.md`) turns monitoring state changes into structured alerts:
+
+```
+MonitoringEngine ──► HealthStateChanged ──► AlertEngine ──► AlertEvaluator ──► AlertStore ──► Alerts/AlertEvent
+                                                                                             │
+                                                                              ┌──────────────┼──────────────┐
+                                                                              ▼              ▼              ▼
+                                                                             WPF      Future notifier      AI (network_alerts)
+```
+
+- `Alert`/`AlertEvaluator`/`AlertStore`/`AlertEngine`/`AlertOptions` — **implemented** (deterministic severity, dedup by `TargetId+CheckType`, occurrence tracking, `Open→Acknowledged→Resolved`, evidence-driven resolution).
+- `IAlertObserver` events + no-op `IAlertSuppressionPolicy` boundary — **implemented**.
+- `network_alerts` (LOW, read-only, `IAlertQuery`-only) — **implemented**; registered in the copilot registry.
+- WPF alerts panel (list + detail + acknowledge) in `NetworkMonitoringView`; `MonitoringEvent.Result` enriched to feed occurrence tracking.
+
+---
+
 ## 10. Agent execution boundary (Planned)
 
 Future agents (discovery, troubleshooting, monitoring, security, configuration, documentation) execute only through the same policy-gated tool/command layer. No agent runs arbitrary code. Multi-agent architecture is **not** implemented prematurely.

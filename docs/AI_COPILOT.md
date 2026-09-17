@@ -80,6 +80,13 @@ secret-like keys cannot leak into the UI (covered by a unit test).
 `AIFinding` of type `Observation` (single-tool responses). Inference/recommendation findings are never rendered as
 evidence, and a text-only response produces **zero** evidence items no matter what the text claims (tested).
 
+## Monitoring & alert evidence (Steps 9–11)
+
+Beyond diagnostics, the copilot can read live monitoring and alert state through the read-only
+`network_monitoring_status` (Step 9) and `network_alerts` (Step 11) tools. Both return structured facts/evidence
+and expose no mutation path, so the AI can answer "what is unhealthy" / "any active alerts" without ever changing
+configuration, acknowledging, or resolving anything.
+
 ## Cancellation
 
 `Cancel` → `CancellationTokenSource.Cancel()` → conversation service → provider request (linked timeout) →

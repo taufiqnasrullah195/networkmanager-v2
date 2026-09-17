@@ -151,6 +151,21 @@ Configuration is managed from the WPF editor (see `docs/MONITORING_PROFILES.md`)
 - Global Start/Stop commands; runtime status (Running/Stopped + per-target health) always from the engine.
 - The AI boundary is unchanged: `network_monitoring_status` stays read-only; configuration writes are UI-only.
 
+## Alert engine (Step 11)
+
+The alert engine (see `docs/ALERT_ENGINE.md`) consumes monitoring `HealthStateChanged` + recurring-failure results
+and produces structured alerts:
+
+- `AlertEngine` + `AlertEvaluator` — deterministic rules (HEALTHY→UNHEALTHY = Error, HEALTHY→DEGRADED = Warning,
+  escalation/downgrade, recovery = resolve; UNKNOWN ignored); `AlertOptions` gates each rule.
+- `AlertStore` (in-memory, bounded) — active/recent queries, `Open→Acknowledged→Resolved` lifecycle.
+- Deduplication by `TargetId+CheckType` fingerprint; recurring failures increment `OccurrenceCount` (no spam).
+- `IAlertObserver` events (created/updated/acknowledged/resolved); a no-op `IAlertSuppressionPolicy` boundary for
+  future maintenance windows.
+- `network_alerts` (read-only, `IAlertQuery`-only) — the AI can read alert evidence but never acknowledge/resolve.
+- WPF alerts panel in `NetworkMonitoringView`; the monitoring `MonitoringEvent.Result` payload (added this step)
+  feeds occurrence tracking.
+
 ## Limitations
 
 - SNMP/HTTP monitoring, persistent history, analytics, alerting, and dashboards are **out of scope** (next
