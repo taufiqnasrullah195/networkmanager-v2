@@ -398,6 +398,18 @@ MonitoringEngine ──► HealthStateChanged ──► AlertEngine ──► Al
 
 ---
 
+### 9.8 Persistent State Store & History (implemented)
+
+STEP 12 (see `docs/PERSISTENT_STATE.md`) adds SQLite persistence behind the existing store interfaces:
+
+- `SqliteDatabase` (schema v1 via `PRAGMA user_version`, WAL, migrations) at `%LocalAppData%\NETworkManager\AI\thewisenetwork.db`.
+- `SqliteMonitoringStateStore` + `SqliteAlertStore` (in-memory cache + SQLite history; active alerts restored on startup; in-memory fallback if the DB is unavailable).
+- `SqliteHistoryRepository` (bounded/paginated/parameterized queries) + `SqliteRetentionService` (configurable retention, preserves active alerts).
+- `network_monitoring_history` + `network_alert_history` read-only AI tools; a minimal History panel in `NetworkMonitoringView`.
+- Configuration (profiles/targets/checks) stays in its JSON store — current state vs historical evidence remain separate layers.
+
+---
+
 ## 10. Agent execution boundary (Planned)
 
 Future agents (discovery, troubleshooting, monitoring, security, configuration, documentation) execute only through the same policy-gated tool/command layer. No agent runs arbitrary code. Multi-agent architecture is **not** implemented prematurely.

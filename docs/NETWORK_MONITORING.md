@@ -166,6 +166,19 @@ and produces structured alerts:
 - WPF alerts panel in `NetworkMonitoringView`; the monitoring `MonitoringEvent.Result` payload (added this step)
   feeds occurrence tracking.
 
+## Persistent state (Step 12)
+
+The in-memory stores are replaced by persistent SQLite-backed stores (see `docs/PERSISTENT_STATE.md`):
+
+- `SqliteMonitoringStateStore` / `SqliteAlertStore` implement the existing `IMonitoringStateStore` / `IAlertStore`
+  (in-memory cache + SQLite history); active alerts are restored on startup.
+- `SqliteHistoryRepository` provides bounded/paginated/parameterized history queries (results, transitions, alert
+  history, occurrences).
+- `SqliteRetentionService` deletes expired results/transitions/resolved alerts (configurable windows) while
+  preserving active alerts.
+- Two read-only AI tools (`network_monitoring_history`, `network_alert_history`) expose historical evidence; a
+  minimal WPF History panel in `NetworkMonitoringView` shows recent results + alert history.
+
 ## Limitations
 
 - SNMP/HTTP monitoring, persistent history, analytics, alerting, and dashboards are **out of scope** (next
