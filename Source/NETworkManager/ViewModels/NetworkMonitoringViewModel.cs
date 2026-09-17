@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Input;
 using log4net;
 using NETworkManager.AI.Abstractions;
+using NETworkManager.AI.Alerts;
 using NETworkManager.AI.Monitoring;
 using NETworkManager.AI.Models;
 using NETworkManager.Utilities;
